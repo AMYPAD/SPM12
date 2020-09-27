@@ -1,11 +1,13 @@
 from __future__ import print_function
+from functools import lru_cache
+from os import getenv, path, makedirs
+from pkg_resources import resource_filename
+from textwrap import dedent
 import logging
 import sys
-from os import getenv, path, makedirs
-from functools import lru_cache
-from textwrap import dedent
 
 __all__ = ["create_dir", "get_matlab"]
+PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
 
@@ -38,10 +40,12 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
     if not started or (name and name not in started):
         notify = True
         log.debug("Starting MATLAB")
-    res = engine.connect_matlab(name=name or getenv("SPM12_MATLAB_ENGINE", None))
+    eng = engine.connect_matlab(name=name or getenv("SPM12_MATLAB_ENGINE", None))
     if notify:
         log.debug("MATLAB started")
-    return res
+    log.debug("adding SPM (%s) to MATLAB path", PATH_M)
+    eng.addpath(PATH_M, nargout=0)
+    return eng
 
 
 def create_dir(pth):
