@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [2.7, 3.7]
+        python: ['2.7', '3.7']
     name: Check py${{ matrix.python }}
     steps:
     - uses: actions/checkout@v2
@@ -15,8 +15,12 @@ jobs:
         python-version: ${{ matrix.python }}
     - run: pip install .[dev]
     - run: python setup.py check -mrs
-    - run: flake8
+    - run: flake8 .
+    - if: |
+        ! startsWith(matrix.python, '2')
+      run: black --check .
   test:
+    needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,3 +33,14 @@ jobs:
         python-version: ${{ matrix.python }}
     - run: pip install .[dev]
     - run: python -m tests --cov-report=term-missing --cov-report=xml
+  deploy:
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    needs: check
+    name: PyPI Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: casperdcl/deploy-pypi@v1
+        with:
+           password: ${{ secrets.pypi_token }}
+           build: true
