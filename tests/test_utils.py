@@ -1,8 +1,8 @@
-import pytest
+from pytest import importorskip
 
 
 def test_matlab():
-    engine = pytest.importorskip("matlab.engine")
+    engine = importorskip("matlab.engine")
     from spm12.utils import get_matlab
 
     assert not engine.find_matlab()
