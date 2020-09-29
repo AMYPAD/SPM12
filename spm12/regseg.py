@@ -7,21 +7,14 @@ import os
 import shutil
 
 from amypad.imio import nii
-from amypad.utils import create_dir
+from amypad.utils import create_dir, hasext
 import numpy as np
 import scipy.ndimage as ndi
 
 from .utils import get_matlab
 
 __author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
-__copyright__ = "Copyright 2020"
 log = logging.getLogger(__name__)
-
-
-def hasext(fname, ext):
-    if ext[0] != ".":
-        ext = "." + ext
-    return os.path.splitext(fname)[1].lower() == ext.lower()
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
