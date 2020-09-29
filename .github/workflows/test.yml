@@ -21,7 +21,7 @@ jobs:
       run: black --check .
   test:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         python: [2.7, 3.7]
@@ -35,7 +35,7 @@ jobs:
     - run: python -m tests --cov-report=term-missing --cov-report=xml
   deploy:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-    needs: check
+    needs: [check, test]
     name: PyPI Deploy
     runs-on: ubuntu-latest
     steps:
