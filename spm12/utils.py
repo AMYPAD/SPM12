@@ -1,12 +1,12 @@
 from __future__ import print_function
 from functools import lru_cache
-from os import getenv, path, makedirs
+from os import getenv
 from pkg_resources import resource_filename
 from textwrap import dedent
 import logging
 import sys
 
-__all__ = ["create_dir", "get_matlab"]
+__all__ = ["get_matlab"]
 PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
@@ -46,9 +46,3 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
     log.debug("adding SPM (%s) to MATLAB path", PATH_M)
     eng.addpath(PATH_M, nargout=0)
     return eng
-
-
-def create_dir(pth):
-    """Equivalent of `mkdir -p`"""
-    if not path.exists(pth):
-        makedirs(pth)
