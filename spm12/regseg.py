@@ -1,5 +1,6 @@
 from subprocess import check_call
 from textwrap import dedent
+import errno
 import glob
 import logging
 import os
@@ -15,6 +16,12 @@ from .utils import get_matlab
 __author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
 __copyright__ = "Copyright 2020"
 log = logging.getLogger(__name__)
+
+
+def hasext(fname, ext):
+    if ext[0] != ".":
+        ext = "." + ext
+    return os.path.splitext(fname)[1].lower() == ext.lower()
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
@@ -61,47 +68,45 @@ def coreg_spm(
     fcomment="",
     pickname="ref",
     costfun="nmi",
-    sep=[4, 2],
-    tol=[
-        0.0200,
-        0.0200,
-        0.0200,
-        0.0010,
-        0.0010,
-        0.0010,
-        0.0100,
-        0.0100,
-        0.0100,
-        0.0010,
-        0.0010,
-        0.0010,
-    ],
-    fwhm=[7, 7],
-    params=[0, 0, 0, 0, 0, 0],
+    sep=None,
+    tol=None,
+    fwhm=None,
+    params=None,
     graphics=1,
     visual=0,
     del_uncmpr=True,
     save_arr=True,
     save_txt=True,
 ):
-    import matlab
-
+    sep = sep or [4, 2]
+    tol = tol or [
+        0.0200,
+        0.0200,
+        0.0200,
+        0.0010,
+        0.0010,
+        0.0010,
+        0.0100,
+        0.0100,
+        0.0100,
+        0.0010,
+        0.0010,
+        0.0010,
+    ]
+    fwhm = fwhm or [7, 7]
+    params = params or [0, 0, 0, 0, 0, 0]
     eng = get_matlab(matlab_eng_name)
 
-    # > output path
-    if outpath == "" and fname_aff != "" and "/" in fname_aff:
-        opth = os.path.dirname(fname_aff)
-        if opth == "":
-            opth = os.path.dirname(imflo)
+    if not outpath and fname_aff and "/" in fname_aff:
+        opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
         fname_aff = os.path.basename(fname_aff)
-    elif outpath == "":
-        opth = os.path.dirname(imflo)
     else:
-        opth = outpath
+        opth = outpath or os.path.dirname(imflo)
+    log.debug("output path:%s", opth)
     create_dir(opth)
 
     # > decompress ref image as necessary
-    if imref[-3:] == ".gz":
+    if hasext(imref, "gz"):
         imrefu = nii.nii_ugzip(imref, outpath=opth)
     else:
         fnm = nii.file_parts(imref)[1] + "_copy.nii"
@@ -122,7 +127,7 @@ def coreg_spm(
         )
 
     # > floating
-    if imflo[-3:] == ".gz":
+    if hasext(imflo, "gz"):
         imflou = nii.nii_ugzip(imflo, outpath=opth)
     else:
         fnm = nii.file_parts(imflo)[1] + "_copy.nii"
@@ -142,14 +147,16 @@ def coreg_spm(
         )
 
     # run the matlab SPM coregistration
+    import matlab as ml
+
     Mm, xm = eng.coreg_spm_m(
         imrefu,
         imflou,
         costfun,
-        matlab.double(sep),
-        matlab.double(tol),
-        matlab.double(fwhm),
-        matlab.double(params),
+        ml.double(sep),
+        ml.double(tol),
+        ml.double(fwhm),
+        ml.double(params),
         graphics,
         visual,
         nargout=2,
@@ -197,7 +204,7 @@ def coreg_spm(
     if save_arr:
         np.save(faff, M)
     if save_txt:
-        faff = os.path.splitext(faff)[0] + ".txt"
+        faff = hasext(faff, "txt")
         np.savetxt(faff, M)
 
     return {
@@ -238,27 +245,17 @@ def resample_spm(
         ======================================================================"""
         ).format(imref, imflo)
     )
-
-    import matlab
-
     eng = get_matlab(matlab_eng_name)
 
-    # > output path
-    if outpath == "" and fimout != "":
-        opth = os.path.dirname(fimout)
-        if opth == "":
-            opth = os.path.dirname(imflo)
-
-    elif outpath == "":
-        opth = os.path.dirname(imflo)
-
+    if not outpath and fimout:
+        opth = os.path.dirname(fimout) or os.path.dirname(imflo)
     else:
-        opth = outpath
-
+        opth = outpath or os.path.dirname(imflo)
+    log.debug("output path:%s", opth)
     create_dir(opth)
 
     # > decompress if necessary
-    if imref[-3:] == ".gz":
+    if hasext(imref, "gz"):
         imrefu = nii.nii_ugzip(imref, outpath=opth)
     else:
         fnm = nii.file_parts(imref)[1] + "_copy.nii"
@@ -266,7 +263,7 @@ def resample_spm(
         shutil.copyfile(imref, imrefu)
 
     # > floating
-    if imflo[-3:] == ".gz":
+    if hasext(imflo, "gz"):
         imflou = nii.nii_ugzip(imflo, outpath=opth)
     else:
         fnm = nii.file_parts(imflo)[1] + "_copy.nii"
@@ -274,23 +271,26 @@ def resample_spm(
         shutil.copyfile(imflo, imflou)
 
     if isinstance(M, str):
-        if os.path.basename(M).endswith(".txt"):
+        if hasext(M, ".txt"):
             M = np.loadtxt(M)
             log.info("matrix M given in the form of text file")
-        elif os.path.basename(M).endswith(".npy"):
+        elif hasext(M, ".npy"):
             M = np.load(M)
             log.info("matrix M given in the form of NumPy file")
         else:
-            raise IOError("Unrecognised file extension for the affine.")
-
+            raise IOError(
+                errno.ENOENT, M, "Unrecognised file extension for the affine."
+            )
     elif isinstance(M, (np.ndarray, np.generic)):
         log.info("matrix M given in the form of Numpy array")
     else:
-        raise IOError("The form of affine matrix not recognised.")
+        raise ValueError("unrecognised affine matrix format")
 
     # run the Matlab SPM resampling
-    _ = eng.resample_spm_m(
-        imrefu, imflou, matlab.double(M.tolist()), mask, mean, intrp, which, prefix
+    import matlab as ml
+
+    eng.resample_spm_m(
+        imrefu, imflou, ml.double(M.tolist()), mask, mean, intrp, which, prefix
     )
 
     # -compress the output
@@ -353,30 +353,23 @@ def realign_mltp_spm(
         fims:   has to be a list of at least two files with the first one acting
                 as a reference.
     """
-    # > input folder
     inpath = os.path.dirname(fims[0])
+    outpath = os.path.join(outpath or inpath, "align")
 
-    # > output folder
-    if outpath == "":
-        outpath = os.path.join(inpath, "align")
-    else:
-        outpath = os.path.join(outpath, "align")
-
-    if fims[0][-3:] == ".gz" or niicopy:
+    if hasext(fims[0], ".gz") or niicopy:
         tmpth = outpath  # os.path.join(outpath, 'tmp')
         rpth = tmpth
     else:
         tmpth = outpath
         rpth = inpath
-
     create_dir(tmpth)
 
     # > uncompress for SPM
     fungz = []
     for f in fims:
-        if f[-3:] == ".gz":
+        if hasext(f, ".gz"):
             fun = nii.nii_ugzip(f, outpath=tmpth)
-        elif os.path.isfile(f) and f.endswith("nii"):
+        elif os.path.isfile(f) and hasext(f, "nii"):
             if niicopy:
                 fun = os.path.join(tmpth, nii.file_parts(f)[1] + "_copy.nii")
                 shutil.copyfile(f, fun)
@@ -399,7 +392,7 @@ def realign_mltp_spm(
         fsrt = fungz
 
     P_input = [
-        f + ",1" for f in fsrt if f.endswith("nii") and f[0] != "r" and "mean" not in f
+        f + ",1" for f in fsrt if hasext(f, "nii") and f[0] != "r" and "mean" not in f
     ]
 
     # > maximal number of characters per line (for Matlab array)
@@ -486,17 +479,14 @@ def resample_mltp_spm(
                 as a reference.
     """
     if not isinstance(fims, list) and not isinstance(fims[0], str):
-        raise ValueError("e> unrecognised list of input images")
+        raise ValueError("unrecognised list of input images")
 
     if not os.path.isfile(ftr):
-        raise IOError("e> cannot open the file with translations and rotations")
+        raise IOError(
+            errno.ENOENT, ftr, "cannot open the file with translations and rotations"
+        )
 
-    # > output path
-    if outpath == "":
-        opth = os.path.dirname(fims[0])
-    else:
-        opth = outpath
-
+    opth = outpath or os.path.dirname(fims[0])
     create_dir(opth)
 
     # > working file names (not touching the original ones)
@@ -504,10 +494,10 @@ def resample_mltp_spm(
 
     # > decompress if necessary
     for f in fims:
-        if not os.path.isfile(f) and not (f.endswith("nii") or f.endswith("nii.gz")):
-            raise IOError("e> could not open file:", f)
+        if not os.path.isfile(f) and not nii.RE_NII.search(f):
+            raise IOError(errno.ENOENT, f, "could not open file")
 
-        if f[-3:] == ".gz":
+        if hasext(f, "gz"):
             fugz = nii.nii_ugzip(f, outpath=os.path.join(opth, "copy"))
         elif copy_input:
             fnm = nii.file_parts(f)[1] + "_copy.nii"
