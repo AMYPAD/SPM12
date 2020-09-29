@@ -20,18 +20,11 @@ jobs:
         ! startsWith(matrix.python, '2')
       run: black --check .
   test:
-    needs: check
-    runs-on: self-hosted
-    strategy:
-      matrix:
-        python: [2.7, 3.7]
-    name: Test py${{ matrix.python }}
+    runs-on: [self-hosted, matlab]
+    name: Test matlab
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python }}
-    - run: pip install .[dev]
+    - run: pip install -U .[dev]
     - run: python -m tests --cov-report=term-missing --cov-report=xml
   deploy:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
