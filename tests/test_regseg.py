@@ -14,7 +14,11 @@ HOME = getenv("DATA_ROOT", path.expanduser("~"))
 DATA = path.join(HOME, "Ab_PET_mMR_test")
 skip_no_data = pytest.mark.skipif(
     not path.exists(DATA),
-    reason="cannot find Ab_PET_mMR_test in ${DATA_ROOT:-~} (%s)" % HOME,
+    reason="""\
+Cannot find Ab_PET_mMR_test in ${DATA_ROOT:-~} (%s).
+Get it from https://zenodo.org/record/3877529
+"""
+    % HOME,
 )
 mri = path.join(DATA, "T1w_N4", "t1_S00113_17598013_N4bias_cut.nii.gz")
 pet = path.join(
