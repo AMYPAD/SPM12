@@ -197,7 +197,7 @@ def coreg_spm(
     if save_arr:
         np.save(faff, M)
     if save_txt:
-        faff = hasext(faff, "txt")
+        faff = os.path.splitext(faff)[1] + ".txt"
         np.savetxt(faff, M)
 
     return {
@@ -228,7 +228,7 @@ def resample_spm(
     del_flo_uncmpr=False,
     del_out_uncmpr=False,
 ):
-    log.info(
+    log.debug(
         dedent(
             """\
         ======================================================================
@@ -300,7 +300,7 @@ def resample_spm(
         os.remove(fim)
 
     # > the compressed output naming
-    if fimout != "":
+    if fimout:
         fout = os.path.join(opth, fimout)
     elif pickname == "ref":
         fout = os.path.join(
