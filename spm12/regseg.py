@@ -197,7 +197,7 @@ def coreg_spm(
     if save_arr:
         np.save(faff, M)
     if save_txt:
-        faff = os.path.splitext(faff)[1] + ".txt"
+        faff = os.path.splitext(faff)[0] + ".txt"
         np.savetxt(faff, M)
 
     return {
