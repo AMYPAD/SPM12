@@ -14,5 +14,11 @@ Install
     pip install -U spm12
 
 
+Contributing
+------------
+
+See `CONTRIBUTING.md <./CONTRIBUTING.md>`_.
+
+
 .. |Tests| image:: https://img.shields.io/github/workflow/status/AMYPAD/SPM12/Test
    :target: https://github.com/AMYPAD/SPM12/actions

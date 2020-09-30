@@ -60,6 +60,7 @@ def ensure_spm(name=None):
             MATLAB cannot find SPM.
             Please follow installation instructions at
             https://en.wikibooks.org/wiki/SPM/Download
+            Make sure to add SPM12 to MATLAB's path using `startup.m`
             """
             )
         )
