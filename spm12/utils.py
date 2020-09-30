@@ -27,12 +27,14 @@ install-the-matlab-engine-for-python.html
 install-matlab-engine-api-for-python-in-nondefault-locations.html
         It's likely you need to do:
 
-        cd "matlabroot\\extern\\engines\\python"
-        {exe} setup.py build --build-base="builddir" install --user
+        cd "MATLABROOT\\extern\\engines\\python"
+        {exe} setup.py build --build-base="BUILDDIR" install
 
-        (Start MATLAB and type `matlabroot` in the command window to find
-        the relevant directory for the above command. Also fill in any
-        temporary directory name for builddir.)
+        - MATLABROOT: start MATLAB and type `matlabroot` in the command window
+          to find the relevant directory for the above command.
+        - Fill in any temporary directory name for BUILDDIR (e.g. /tmp/builddir).
+        - If installation fails due to write permissions, try appending `--user`
+          to the above command.
         """
             ).format(exe=sys.executable)
         )
