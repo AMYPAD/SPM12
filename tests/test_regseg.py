@@ -41,9 +41,9 @@ def tmpdir(*args, **kwargs):
     rmtree(d)
 
 
-def assert_equal_arrays(x, y, tol=0):
-    if tol:
-        if (np.abs(x - y) < tol).all():
+def assert_equal_arrays(x, y, nmse_tol=0):
+    if nmse_tol:
+        if ((x - y) ** 2).mean() / (y ** 2).mean() < nmse_tol:
             return
     elif (x == y).all():
         return
@@ -51,8 +51,8 @@ def assert_equal_arrays(x, y, tol=0):
         dedent(
             """\
         Unequal arrays:x != y. min/mean/max(std):
-        x: {:.3g}{:.3g}{:.3g}({:.3g})
-        y: {:.3g}{:.3g}{:.3g}({:.3g})
+        x: {:.3g}/{:.3g}/{:.3g}({:.3g})
+        y: {:.3g}/{:.3g}/{:.3g}({:.3g})
         """
         ).format(
             x.min(),
@@ -71,7 +71,7 @@ def assert_equal_arrays(x, y, tol=0):
 def test_coreg():
     with tmpdir() as outpath:
         res = regseg.coreg_spm(pet, mri, outpath=outpath)
-    assert_equal_arrays(res["affine"], mri2pet, 1e-3)
+    assert_equal_arrays(res["affine"], mri2pet, 1e-4)
 
 
 @skip_no_data
