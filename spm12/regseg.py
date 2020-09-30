@@ -11,7 +11,7 @@ from amypad.utils import create_dir, hasext
 import numpy as np
 import scipy.ndimage as ndi
 
-from .utils import get_matlab
+from .utils import ensure_spm
 
 __author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
 log = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ def coreg_spm(
     ]
     fwhm = fwhm or [7, 7]
     params = params or [0, 0, 0, 0, 0, 0]
-    eng = get_matlab(matlab_eng_name)
+    eng = ensure_spm(matlab_eng_name)  # get_matlab
 
     if not outpath and fname_aff and "/" in fname_aff:
         opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
@@ -238,7 +238,7 @@ def resample_spm(
         ======================================================================"""
         ).format(imref, imflo)
     )
-    eng = get_matlab(matlab_eng_name)
+    eng = ensure_spm(matlab_eng_name)  # get_matlab
 
     if not outpath and fimout:
         opth = os.path.dirname(fimout) or os.path.dirname(imflo)

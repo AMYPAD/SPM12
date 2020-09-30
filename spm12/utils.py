@@ -1,12 +1,12 @@
 from __future__ import print_function
-from functools import lru_cache
+from functools import lru_cache, wraps
 from os import getenv
 from pkg_resources import resource_filename
 from textwrap import dedent
 import logging
 import sys
 
-__all__ = ["get_matlab"]
+__all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
@@ -47,4 +47,20 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
         log.debug("MATLAB started")
     log.debug("adding SPM (%s) to MATLAB path", PATH_M)
     eng.addpath(PATH_M, nargout=0)
+    return eng
+
+
+@wraps(get_matlab)
+def ensure_spm(name=None):
+    eng = get_matlab(name)
+    if not eng.exist("spm_jobman"):
+        raise ImportError(
+            dedent(
+                """\
+            MATLAB cannot find SPM.
+            Please follow installation instructions at
+            https://en.wikibooks.org/wiki/SPM/Download
+            """
+            )
+        )
     return eng
