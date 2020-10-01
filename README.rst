@@ -14,6 +14,7 @@ Install
 .. code:: sh
 
     pip install -U spm12
+    python -c "from spm12 import ensure_spm; ensure_spm()"
 
 
 Examples
