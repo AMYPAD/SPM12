@@ -114,8 +114,11 @@ def _install_engine():
         try:
             return check_output(cmd, cwd=src)
         except CalledProcessError:
-            raise RuntimeError(
-                "Could not run {cmd} in directory {src}".format(
-                    cmd=" ".join(cmd), src=src
+            try:
+                return check_output(cmd + ["--user"], cwd=src)
+            except CalledProcessError as err:
+                raise RuntimeError(
+                    "Could not run {cmd} in directory {src}:\n\n{err}".format(
+                        cmd=" ".join(cmd), src=src, err=err
+                    )
                 )
-            )
