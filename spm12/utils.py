@@ -1,13 +1,18 @@
 from __future__ import print_function
 from functools import lru_cache, wraps
-from os import getenv
+from os import getenv, path
 from pkg_resources import resource_filename
+from subprocess import CalledProcessError, STDOUT, check_output
 from textwrap import dedent
 import logging
+import re
 import sys
+
+from amypad.utils import tmpdir
 
 __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
+MATLAB_RUN = "matlab -nodesktop -nodisplay -nosplash -nojvm -r".split()
 log = logging.getLogger(__name__)
 
 
@@ -16,28 +21,43 @@ def get_matlab(name=None):
     try:
         from matlab import engine
     except ImportError:
-        raise ImportError(
-            dedent(
-                """\
-        Please install MATLAB and its Python module.
-        See https://www.mathworks.com/help/matlab/matlab_external/\
+        try:
+            log.warn(
+                dedent(
+                    """\
+                Python could not find the MATLAB engine.
+                Attempting to install automatically."""
+                )
+            )
+            _install_engine()
+            log.info("installed MATLAB engine for Python")
+            from matlab import engine
+        except RuntimeError as e:
+            raise ImportError(
+                str(e)
+                + "\n\n"
+                + dedent(
+                    """\
+                Please install MATLAB and its Python module.
+                See https://www.mathworks.com/help/matlab/matlab_external/\
 install-the-matlab-engine-for-python.html
-        or
-        https://www.mathworks.com/help/matlab/matlab_external/\
+                or
+                https://www.mathworks.com/help/matlab/matlab_external/\
 install-matlab-engine-api-for-python-in-nondefault-locations.html
-        It's likely you need to do:
+                It's likely you need to do:
 
-        cd "MATLABROOT\\extern\\engines\\python"
-        {exe} setup.py build --build-base="BUILDDIR" install
+                cd "{matlabroot}\\extern\\engines\\python"
+                {exe} setup.py build --build-base="BUILDDIR" install
 
-        - MATLABROOT: start MATLAB and type `matlabroot` in the command window
-          to find the relevant directory for the above command.
-        - Fill in any temporary directory name for BUILDDIR (e.g. /tmp/builddir).
-        - If installation fails due to write permissions, try appending `--user`
-          to the above command.
-        """
-            ).format(exe=sys.executable)
-        )
+                - Fill in any temporary directory name for BUILDDIR
+                  (e.g. /tmp/builddir).
+                - If installation fails due to write permissions, try appending `--user`
+                  to the above command.
+            """
+                ).format(
+                    matlabroot=matlabroot(default="matlabroot"), exe=sys.executable
+                )
+            )
     started = engine.find_matlab()
     if not started or (name and name not in started):
         notify = True
@@ -65,3 +85,37 @@ def ensure_spm(name=None):
             )
         )
     return eng
+
+
+def _matlab_run(command, jvm=False):
+    if not command.endswith("exit"):
+        command = command + ", exit"
+    return check_output(
+        MATLAB_RUN + ([] if jvm else ["-nojvm"]) + [command], stderr=STDOUT
+    ).strip()
+
+
+def matlabroot(default=None):
+    try:
+        res = check_output(["matlab", "-n"])
+        res = res.decode("utf-8")
+        res = re.search(r"MATLAB\s+=\s+(\S+)\s*$", res, flags=re.M)
+        return res.group(1)
+    except:  # noqa: E722
+        if default:
+            return default
+        raise
+
+
+def _install_engine():
+    src = path.join(matlabroot(), "extern", "engines", "python")
+    with tmpdir() as td:
+        cmd = [sys.executable, "setup.py", "build", "--build-base", td, "install"]
+        try:
+            return check_output(cmd, cwd=src)
+        except CalledProcessError:
+            raise RuntimeError(
+                "Could not run {cmd} in directory {src}".format(
+                    cmd=" ".join(cmd), src=src
+                )
+            )

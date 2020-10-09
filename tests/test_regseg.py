@@ -1,10 +1,9 @@
-from contextlib import contextmanager
 from os import path, getenv
-from shutil import rmtree
-from tempfile import mkdtemp
 from textwrap import dedent
 
 from amypad.imio import nii
+from amypad.utils import tmpdir
+
 import numpy as np
 import pytest
 
@@ -36,13 +35,6 @@ Get it from https://zenodo.org/record/3877529
 """
     % HOME,
 )
-
-
-@contextmanager
-def tmpdir(*args, **kwargs):
-    d = mkdtemp(*args, **kwargs)
-    yield d
-    rmtree(d)
 
 
 def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
