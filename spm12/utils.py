@@ -68,25 +68,52 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
     eng = engine.connect_matlab(name=name or getenv("SPM12_MATLAB_ENGINE", None))
     if notify:
         log.debug("MATLAB started")
-    log.debug("adding SPM (%s) to MATLAB path", PATH_M)
+    log.debug("adding wrappers (%s) to MATLAB path", PATH_M)
     eng.addpath(PATH_M, nargout=0)
     return eng
 
 
 @wraps(get_matlab)
-def ensure_spm(name=None):
+def ensure_spm(name=None, cache="~/.spm12", version=12):
     eng = get_matlab(name)
+    cache = path.expanduser(cache)
+    if str(version) != "12":
+        raise NotImplementedError
+    addpath = path.join(cache, "spm12")
+    if path.exists(addpath):
+        eng.addpath(addpath)
     if not eng.exist("spm_jobman"):
-        raise ImportError(
-            dedent(
-                """\
-            MATLAB cannot find SPM.
-            Please follow installation instructions at
-            https://en.wikibooks.org/wiki/SPM/Download
-            Make sure to add SPM12 to MATLAB's path using `startup.m`
-            """
+        log.warn("MATLAB could not find SPM.")
+        try:
+            from brainweb import get_file
+            from zipfile import ZipFile
+
+            log.info("Downloading to %s", cache)
+            fname = get_file(
+                "spm12.zip",
+                "https://www.fil.ion.ucl.ac.uk/"
+                "spm/download/restricted/eldorado/spm12.zip",
+                cache,
+                chunk_size=2 ** 17,
             )
-        )
+            log.info("Extracting")
+            with ZipFile(fname) as fd:
+                fd.extractall(path=cache)
+            eng.addpath(addpath)
+            if not eng.exist("spm_jobman"):
+                raise RuntimeError("MATLAB could not find SPM.")
+            log.info("Installed")
+        except:  # NOQA: E722
+            raise ImportError(
+                dedent(
+                    """\
+                MATLAB could not find SPM.
+                Please follow installation instructions at
+                https://en.wikibooks.org/wiki/SPM/Download
+                Make sure to add SPM to MATLAB's path using `startup.m`
+                """
+                )
+            )
     return eng
 
 
@@ -132,7 +159,7 @@ def _install_engine():
     with tmpdir() as td:
         cmd = [sys.executable, "setup.py", "build", "--build-base", td, "install"]
         try:
-            return check_output(cmd, cwd=src)
+            return check_output(cmd, cwd=src).decode("utf-8")
         except CalledProcessError:
             log.warn("Normal install failed. Attempting `--user` install.")
-            return check_output(cmd + ["--user"], cwd=src)
+            return check_output(cmd + ["--user"], cwd=src).decode("utf-8")
