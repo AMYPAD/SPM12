@@ -34,7 +34,7 @@ def get_matlab(name=None):
                 Attempting to install automatically."""
                 )
             )
-            _install_engine()
+            log.debug(_install_engine())
             log.info("installed MATLAB engine for Python")
             from matlab import engine
         except CalledProcessError:
@@ -90,24 +90,26 @@ def ensure_spm(name=None):
     return eng
 
 
-def _matlab_run(command, jvm=False):
-    if not command.endswith("exit"):
+def _matlab_run(command, jvm=False, auto_exit=True):
+    if auto_exit and not command.endswith("exit"):
         command = command + ", exit"
-    return check_output(
-        MATLAB_RUN + ([] if jvm else ["-nojvm"]) + [command], stderr=STDOUT
-    ).strip()
+    return (
+        check_output(
+            MATLAB_RUN + ([] if jvm else ["-nojvm"]) + [command], stderr=STDOUT
+        )
+        .decode("utf-8")
+        .strip()
+    )
 
 
 def matlabroot(default=None):
     try:
-        res = check_output(["matlab", "-n"])
-        res = res.decode("utf-8")
-        res = re.search(r"MATLAB\s+=\s+(\S+)\s*$", res, flags=re.M)
-        return res.group(1)
-    except:  # noqa: E722
+        res = check_output(["matlab", "-n"]).decode("utf-8")
+    except CalledProcessError:
         if default:
             return default
         raise
+    return re.search(r"MATLAB\s+=\s+(\S+)\s*$", res, flags=re.M).group(1)
 
 
 def _install_engine():
@@ -121,8 +123,7 @@ def _install_engine():
                 dedent(
                     """\
                 Python version is {info[0]}.{info[1]},
-                but the installed MATLAB only supports Python versions:
-                [{supported}]
+                but the installed MATLAB only supports Python versions: [{supported}]
                 """.format(
                         info=sys.version_info[:2], supported=", ".join(supported)
                     )
