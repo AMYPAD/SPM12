@@ -1,4 +1,5 @@
 from __future__ import print_function
+from ast import literal_eval
 from functools import lru_cache, wraps
 from os import getenv, path
 from pkg_resources import resource_filename
@@ -14,6 +15,10 @@ __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
 MATLAB_RUN = "matlab -nodesktop -nodisplay -nosplash -nojvm -r".split()
 log = logging.getLogger(__name__)
+
+
+class VersionError(ValueError):
+    pass
 
 
 @lru_cache()
@@ -32,11 +37,9 @@ def get_matlab(name=None):
             _install_engine()
             log.info("installed MATLAB engine for Python")
             from matlab import engine
-        except RuntimeError as e:
+        except CalledProcessError:
             raise ImportError(
-                str(e)
-                + "\n\n"
-                + dedent(
+                dedent(
                     """\
                 Please install MATLAB and its Python module.
                 See https://www.mathworks.com/help/matlab/matlab_external/\
@@ -53,7 +56,7 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
                   (e.g. /tmp/builddir).
                 - If installation fails due to write permissions, try appending `--user`
                   to the above command.
-            """
+                """
                 ).format(
                     matlabroot=matlabroot(default="matlabroot"), exe=sys.executable
                 )
@@ -109,16 +112,26 @@ def matlabroot(default=None):
 
 def _install_engine():
     src = path.join(matlabroot(), "extern", "engines", "python")
+    with open(path.join(src, "setup.py")) as fd:  # check version support
+        supported = literal_eval(
+            re.search(r"supported_version.*?=\s*(.*?)$", fd.read(), flags=re.M).group(1)
+        )
+        if ".".join(map(str, sys.version_info[:2])) not in map(str, supported):
+            raise VersionError(
+                dedent(
+                    """\
+                Python version is {info[0]}.{info[1]},
+                but the installed MATLAB only supports Python versions:
+                [{supported}]
+                """.format(
+                        info=sys.version_info[:2], supported=", ".join(supported)
+                    )
+                )
+            )
     with tmpdir() as td:
         cmd = [sys.executable, "setup.py", "build", "--build-base", td, "install"]
         try:
             return check_output(cmd, cwd=src)
         except CalledProcessError:
-            try:
-                return check_output(cmd + ["--user"], cwd=src)
-            except CalledProcessError as err:
-                raise RuntimeError(
-                    "Could not run {cmd} in directory {src}:\n\n{err}".format(
-                        cmd=" ".join(cmd), src=src, err=err
-                    )
-                )
+            log.warn("Normal install failed. Attempting `--user` install.")
+            return check_output(cmd + ["--user"], cwd=src)
