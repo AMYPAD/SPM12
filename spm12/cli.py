@@ -19,3 +19,4 @@ def main(argv=None):
     args = argopt(__doc__).parse_args(argv)
     ensure_spm(cache=args.cache, version=args.spm_version)
     print("SPM{v} is successfully installed".format(v=args.spm_version))
+    return 0
