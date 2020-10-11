@@ -62,6 +62,7 @@ install-matlab-engine-api-for-python-in-nondefault-locations.html
                 )
             )
     started = engine.find_matlab()
+    notify = False
     if not started or (name and name not in started):
         notify = True
         log.debug("Starting MATLAB")
