@@ -11,6 +11,8 @@ Thin Python wrappers around `Statistical Parametric Mapping <https://www.fil.ion
 Install
 -------
 
+Currently requires MATLAB. May change in future.
+
 .. code:: sh
 
     python -m pip install -U spm12
