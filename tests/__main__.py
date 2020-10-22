@@ -10,6 +10,7 @@ check_call(
         "pytest",
         "-v",
         "-n=4",
+        "-r=xs",
         "--timeout=600",
         "--timeout_method=thread",
         "--log-level=debug",

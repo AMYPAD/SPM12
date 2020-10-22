@@ -12,8 +12,4 @@ Testing locally
 3. run tests
     - `python -m tests`
 
-You will likely get error messages telling you what to do to set up your environment. This includes:
-
-- installing MATLAB support for Python
-- installing SPM12 for MATLAB
-- downloading test data to DATA_ROOT or HOME
+You will likely get an error message detailing where to download test data.
