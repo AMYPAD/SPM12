@@ -13,12 +13,19 @@ from amypad.utils import tmpdir
 
 __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
-MATLAB_RUN = "matlab -nodesktop -nodisplay -nosplash -nojvm -r".split()
+IS_WIN = any(sys.platform.startswith(i) for i in ["win32", "cygwin"])
+MATLAB_RUN = "matlab -nodesktop -nosplash -nojvm".split()
+if IS_WIN:
+    MATLAB_RUN += ["-wait", "-log"]
 log = logging.getLogger(__name__)
 
 
 class VersionError(ValueError):
     pass
+
+
+def check_output_u8(*args, **kwargs):
+    return check_output(*args, **kwargs).decode("utf-8").strip()
 
 
 @lru_cache()
@@ -121,18 +128,23 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
 def _matlab_run(command, jvm=False, auto_exit=True):
     if auto_exit and not command.endswith("exit"):
         command = command + ", exit"
-    return (
-        check_output(
-            MATLAB_RUN + ([] if jvm else ["-nojvm"]) + [command], stderr=STDOUT
-        )
-        .decode("utf-8")
-        .strip()
+    return check_output_u8(
+        MATLAB_RUN + ([] if jvm else ["-nojvm"]) + ["-r", command], stderr=STDOUT
     )
 
 
 def matlabroot(default=None):
+    if IS_WIN:
+        try:
+            res = _matlab_run("display(matlabroot);")
+        except CalledProcessError:
+            if default:
+                return default
+            raise
+        return re.search(r"^([A-Z]:\\.*)\s*$", res, flags=re.M).group(1)
+
     try:
-        res = check_output(["matlab", "-n"]).decode("utf-8")
+        res = check_output_u8(["matlab", "-n"])
     except CalledProcessError:
         if default:
             return default
@@ -160,7 +172,7 @@ def _install_engine():
     with tmpdir() as td:
         cmd = [sys.executable, "setup.py", "build", "--build-base", td, "install"]
         try:
-            return check_output(cmd, cwd=src).decode("utf-8")
+            return check_output_u8(cmd, cwd=src)
         except CalledProcessError:
             log.warn("Normal install failed. Attempting `--user` install.")
-            return check_output(cmd + ["--user"], cwd=src).decode("utf-8")
+            return check_output_u8(cmd + ["--user"], cwd=src)
