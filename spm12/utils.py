@@ -9,7 +9,7 @@ import logging
 import re
 import sys
 
-from amypad.utils import tmpdir
+from miutil import tmpdir
 
 __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")

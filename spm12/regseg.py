@@ -4,8 +4,8 @@ import logging
 import os
 import shutil
 
-from amypad.imio import nii
-from amypad.utils import create_dir, hasext
+from miutil import create_dir, hasext
+from miutil.imio import nii
 import numpy as np
 import scipy.ndimage as ndi
 
