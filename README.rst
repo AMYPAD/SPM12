@@ -1,7 +1,7 @@
 SPM12
 =====
 
-|Versions| |Py-Versions| |Tests| |LICENCE|
+|Versions| |Py-Versions| |Tests| |DOI| |LICENCE|
 
 Thin Python wrappers around `Statistical Parametric Mapping <https://www.fil.ion.ucl.ac.uk/spm>`_.
 
@@ -38,5 +38,7 @@ See `CONTRIBUTING.md <https://github.com/AMYPAD/SPM12/blob/master/CONTRIBUTING.m
    :target: https://github.com/AMYPAD/SPM12/releases
 .. |Py-Versions| image:: https://img.shields.io/pypi/pyversions/spm12.svg?logo=python&logoColor=white
    :target: https://pypi.org/project/spm12
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4272003.svg
+   :target: https://doi.org/10.5281/zenodo.4272003
 .. |LICENCE| image:: https://img.shields.io/pypi/l/spm12.svg
    :target: https://raw.githubusercontent.com/AMYPAD/spm12/master/LICENCE.md
