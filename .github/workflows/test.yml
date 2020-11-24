@@ -10,11 +10,14 @@ jobs:
     name: Check py${{ matrix.python }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
     - run: pip install -U .[dev]
-    - run: python setup.py check -mrs
+    - run: python setup.py sdist bdist_wheel
+    - run: twine check dist/*
     - run: flake8 .
     - if: |
         ! startsWith(matrix.python, '2')
@@ -24,6 +27,8 @@ jobs:
     name: Test matlab
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - run: pip install -U .[dev]
     - run: python -m tests --cov-report=term-missing --cov-report=xml
   deploy:
