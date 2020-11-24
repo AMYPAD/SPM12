@@ -19,6 +19,7 @@ def get_matlab(name=None):
     return eng
 
 
+@lru_cache()
 @wraps(get_matlab)
 def ensure_spm(name=None, cache="~/.spm12", version=12):
     eng = get_matlab(name)
