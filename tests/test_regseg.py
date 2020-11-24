@@ -1,8 +1,8 @@
 from os import path, getenv
 from textwrap import dedent
 
-from amypad.imio import nii
-from amypad.utils import tmpdir
+from miutil import tmpdir
+from miutil.imio import nii
 
 import numpy as np
 import pytest

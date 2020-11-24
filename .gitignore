@@ -1,5 +1,7 @@
 *.py[cod]
 __pycache__/
+/spm12/_dist_ver.py
+/.eggs/
 /*.egg-info/
 /build/
 /dist/

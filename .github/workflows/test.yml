@@ -10,11 +10,14 @@ jobs:
     name: Check py${{ matrix.python }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
-    - run: pip install .[dev]
-    - run: python setup.py check -mrs
+    - run: pip install -U .[dev]
+    - run: python setup.py sdist bdist_wheel
+    - run: twine check dist/*
     - run: flake8 .
     - if: |
         ! startsWith(matrix.python, '2')
@@ -24,16 +27,56 @@ jobs:
     name: Test matlab
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - run: pip install -U .[dev]
     - run: python -m tests --cov-report=term-missing --cov-report=xml
+    - run: codecov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   deploy:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     needs: [check, test]
     name: PyPI Deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: casperdcl/deploy-pypi@v1
-        with:
-           password: ${{ secrets.pypi_token }}
-           build: true
+    - uses: actions/checkout@v2
+    - uses: casperdcl/deploy-pypi@v1
+      with:
+        build: true
+        gpg_key: ${{ secrets.GPG_KEY }}
+        password: ${{ secrets.PYPI_TOKEN }}
+    - id: collect_assets
+      name: Collect assets
+      run: |
+        echo "::set-output name=asset_path::$(ls dist/*.whl)"
+        echo "::set-output name=asset_name::$(basename dist/*.whl)"
+        echo "::set-output name=asset_path_sig::$(ls dist/*.whl.asc 2>/dev/null)"
+        echo "::set-output name=asset_name_sig::$(basename dist/*.whl.asc 2>/dev/null)"
+        git log --pretty='format:%d%n- %s%n%b---' $(git tag --sort=v:refname | tail -n2 | head -n1)..HEAD > _CHANGES.md
+    - id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: miutil ${{ github.ref }} beta
+        body_path: _CHANGES.md
+        draft: true
+    - uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.collect_assets.outputs.asset_path }}
+        asset_name: ${{ steps.collect_assets.outputs.asset_name }}
+        asset_content_type: application/zip
+    - if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.collect_assets.outputs.asset_path_sig }}
+        asset_name: ${{ steps.collect_assets.outputs.asset_name_sig }}
+        asset_content_type: text/plain
