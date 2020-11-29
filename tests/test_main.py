@@ -1,5 +1,5 @@
-from pytest import skip
 from miutil.mlab import matlabroot
+from pytest import skip
 
 
 def test_cli():

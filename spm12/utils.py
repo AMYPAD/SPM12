@@ -1,10 +1,10 @@
+import logging
 from functools import lru_cache, wraps
 from os import path
-from pkg_resources import resource_filename
 from textwrap import dedent
-import logging
 
 from miutil.mlab import get_engine
+from pkg_resources import resource_filename
 
 __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
@@ -32,8 +32,9 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
     if not eng.exist("spm_jobman"):
         log.warn("MATLAB could not find SPM.")
         try:
-            from brainweb import get_file
             from zipfile import ZipFile
+
+            from brainweb import get_file
 
             log.info("Downloading to %s", cache)
             fname = get_file(
@@ -50,7 +51,7 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
             if not eng.exist("spm_jobman"):
                 raise RuntimeError("MATLAB could not find SPM.")
             log.info("Installed")
-        except:  # NOQA: E722
+        except:  # NOQA: E722,B001
             raise ImportError(
                 dedent(
                     """\
