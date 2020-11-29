@@ -15,13 +15,27 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python }}
+    - name: set PYSHA
+      run: echo "PYSHA=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+    - uses: actions/cache@v1
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit|${{ env.PYSHA }}|${{ hashFiles('.pre-commit-config.yaml') }}
     - run: pip install -U .[dev]
     - run: python setup.py sdist bdist_wheel
     - run: twine check dist/*
-    - run: flake8 .
-    - if: |
-        ! startsWith(matrix.python, '2')
-      run: black --check .
+    - uses: reviewdog/action-setup@v1
+    - if: github.event_name != 'schedule'
+      run: |
+        set -o pipefail
+        pre-commit run -a flake8 | \
+          reviewdog -f=pep8 -name=flake8 -tee -reporter=github-check -filter-mode nofilter
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - if: startsWith(matrix.python, '3')
+      run: pre-commit run -a --show-diff-on-failure
+    - if: startsWith(matrix.python, '2')
+      run: pre-commit run -a --show-diff-on-failure isort
   test:
     runs-on: [self-hosted, matlab]
     name: Test matlab
@@ -41,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
     - uses: casperdcl/deploy-pypi@v1
       with:
         build: true
