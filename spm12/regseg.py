@@ -1,13 +1,13 @@
-from textwrap import dedent
 import errno
 import logging
 import os
 import shutil
+from textwrap import dedent
 
-from miutil import create_dir, hasext
-from miutil.imio import nii
 import numpy as np
 import scipy.ndimage as ndi
+from miutil import create_dir, hasext
+from miutil.imio import nii
 
 from .utils import ensure_spm
 
@@ -302,13 +302,11 @@ def resample_spm(
         fout = os.path.join(opth, fimout)
     elif pickname == "ref":
         fout = os.path.join(
-            opth,
-            "affine_ref-" + nii.file_parts(imrefu)[1] + fcomment + ".nii.gz",
+            opth, "affine_ref-" + nii.file_parts(imrefu)[1] + fcomment + ".nii.gz",
         )
     elif pickname == "flo":
         fout = os.path.join(
-            opth,
-            "affine_flo-" + nii.file_parts(imflo)[1] + fcomment + ".nii.gz",
+            opth, "affine_flo-" + nii.file_parts(imflo)[1] + fcomment + ".nii.gz",
         )
     # change the file name
     os.rename(fim + ".gz", fout)

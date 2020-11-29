@@ -1,5 +1,5 @@
-from os import chdir, path
 import sys
+from os import chdir, path
 from subprocess import check_call
 
 chdir(path.dirname(path.dirname(path.abspath(__file__))))

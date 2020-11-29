@@ -1,11 +1,10 @@
-from os import path, getenv
+from os import getenv, path
 from textwrap import dedent
-
-from miutil import tmpdir
-from miutil.imio import nii
 
 import numpy as np
 import pytest
+from miutil import tmpdir
+from miutil.imio import nii
 
 from spm12 import regseg
 
@@ -53,14 +52,7 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
         y: {:.3g}/{:.3g}/{:.3g}({:.3g})
         """
         ).format(
-            x.min(),
-            x.mean(),
-            x.max(),
-            x.std(),
-            y.min(),
-            y.mean(),
-            y.max(),
-            y.std(),
+            x.min(), x.mean(), x.max(), x.std(), y.min(), y.mean(), y.max(), y.std(),
         )
     )
 
