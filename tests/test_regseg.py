@@ -34,6 +34,9 @@ Get it from https://zenodo.org/record/3877529
 """
     % HOME,
 )
+no_matlab_warn = pytest.mark.filterwarnings(
+    "ignore:.*collections.abc:DeprecationWarning"
+)
 
 
 def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
@@ -58,6 +61,7 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
 
 
 @skip_no_data
+@no_matlab_warn
 def test_resample():
     with tmpdir() as outpath:
         res = regseg.resample_spm(PET, MRI, MRI2PET, outpath=outpath)
@@ -68,6 +72,7 @@ def test_resample():
 
 
 @skip_no_data
+@no_matlab_warn
 def test_coreg():
     with tmpdir() as outpath:
         res = regseg.coreg_spm(PET, MRI, outpath=outpath)
