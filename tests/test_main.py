@@ -3,7 +3,10 @@ from pytest import skip
 
 
 def test_cli():
-    if matlabroot("None") == "None":
+    try:
+        if matlabroot("None") == "None":
+            raise FileNotFoundError
+    except FileNotFoundError:
         skip("MATLAB not installed")
     from spm12.cli import main
 
