@@ -1,10 +1,15 @@
 import logging
-from functools import lru_cache, wraps
+from functools import wraps
 from os import path
 from textwrap import dedent
 
 from miutil.mlab import get_engine
 from pkg_resources import resource_filename
+
+try:
+    from functools import lru_cache
+except ImportError:
+    from backports.functools_lru_cache import lru_cache
 
 __all__ = ["get_matlab", "ensure_spm"]
 PATH_M = resource_filename(__name__, "")
