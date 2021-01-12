@@ -2,6 +2,7 @@ name: Test
 on: [push, pull_request]
 jobs:
   check:
+    if: github.event_name != 'push' || github.ref != 'refs/heads/devel'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -37,6 +38,7 @@ jobs:
     - if: startsWith(matrix.python, '3')
       run: pre-commit run -a --show-diff-on-failure
   test:
+    if: github.event_name != 'pull_request' || github.head_ref != 'devel'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,6 +60,7 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   matlab:
+    if: github.event_name != 'pull_request' || github.head_ref != 'devel'
     runs-on: [self-hosted, python, matlab]
     name: Test matlab
     steps:
