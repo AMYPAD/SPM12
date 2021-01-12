@@ -2,9 +2,9 @@ from os import getenv, path
 from textwrap import dedent
 
 import numpy as np
-import pytest
 from miutil import tmpdir
 from miutil.imio import nii
+from pytest import mark
 
 from spm12 import regseg
 
@@ -26,7 +26,7 @@ MRI2PET = np.array(
         [0.0, 0.0, 0.0, 1.0],
     ]
 )
-skip_no_data = pytest.mark.skipif(
+skip_no_data = mark.skipif(
     not path.exists(DATA),
     reason="""\
 Cannot find Ab_PET_mMR_test in ${DATA_ROOT:-~} (%s).
@@ -34,9 +34,8 @@ Get it from https://zenodo.org/record/3877529
 """
     % HOME,
 )
-no_matlab_warn = pytest.mark.filterwarnings(
-    "ignore:.*collections.abc:DeprecationWarning"
-)
+no_matlab_warn = mark.filterwarnings("ignore:.*collections.abc:DeprecationWarning")
+no_scipy_warn = mark.filterwarnings("ignore:numpy.ufunc size changed.*:RuntimeWarning")
 
 
 def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
@@ -61,6 +60,7 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
 
 
 @skip_no_data
+@no_scipy_warn
 @no_matlab_warn
 def test_resample():
     with tmpdir() as outpath:
@@ -72,6 +72,7 @@ def test_resample():
 
 
 @skip_no_data
+@no_scipy_warn
 @no_matlab_warn
 def test_coreg():
     with tmpdir() as outpath:
