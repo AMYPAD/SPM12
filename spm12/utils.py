@@ -41,7 +41,7 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
     if path.exists(addpath):
         eng.addpath(addpath)
     if not eng.exist("spm_jobman"):
-        log.warn("MATLAB could not find SPM.")
+        log.warning("MATLAB could not find SPM.")
         try:
             from zipfile import ZipFile
 
