@@ -2,19 +2,13 @@ import logging
 from functools import wraps
 from os import path
 from textwrap import dedent
-from warnings import catch_warnings, filterwarnings
 
 from miutil.mlab import get_engine
-
-with catch_warnings():  # fix py<=3.5
-    filterwarnings(
-        "ignore", message="Not importing directory .*mpl_toolkits: missing __init__"
-    )
-    from pkg_resources import resource_filename
+from pkg_resources import resource_filename
 
 try:
     from functools import lru_cache
-except ImportError:
+except ImportError:  # fix py2.7
     from backports.functools_lru_cache import lru_cache
 
 __all__ = ["get_matlab", "ensure_spm"]
