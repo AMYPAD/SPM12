@@ -1,23 +1,11 @@
-from os import getenv, path
 from textwrap import dedent
 
 import numpy as np
-import pytest
-from miutil import tmpdir
 from miutil.imio import nii
+from pytest import mark
 
 from spm12 import regseg
 
-HOME = getenv("DATA_ROOT", path.expanduser("~"))
-DATA = path.join(HOME, "Ab_PET_mMR_test")
-MRI = path.join(DATA, "T1w_N4", "t1_S00113_17598013_N4bias_cut.nii.gz")
-PET = path.join(
-    DATA,
-    "testing_reference",
-    "Ab_PET_mMR_ref",
-    "basic",
-    "17598013_t-3000-3600sec_itr-4_suvr.nii.gz",
-)
 MRI2PET = np.array(
     [
         [0.99990508, 0.00800995, 0.01121016, -0.68164088],
@@ -26,17 +14,8 @@ MRI2PET = np.array(
         [0.0, 0.0, 0.0, 1.0],
     ]
 )
-skip_no_data = pytest.mark.skipif(
-    not path.exists(DATA),
-    reason="""\
-Cannot find Ab_PET_mMR_test in ${DATA_ROOT:-~} (%s).
-Get it from https://zenodo.org/record/3877529
-"""
-    % HOME,
-)
-no_matlab_warn = pytest.mark.filterwarnings(
-    "ignore:.*collections.abc:DeprecationWarning"
-)
+no_matlab_warn = mark.filterwarnings("ignore:.*collections.abc:DeprecationWarning")
+no_scipy_warn = mark.filterwarnings("ignore:numpy.ufunc size changed.*:RuntimeWarning")
 
 
 def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
@@ -60,25 +39,23 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
     )
 
 
-@skip_no_data
+@no_scipy_warn
 @no_matlab_warn
-def test_resample():
-    with tmpdir() as outpath:
-        res = regseg.resample_spm(PET, MRI, MRI2PET, outpath=outpath)
-        res = nii.getnii(res)
+def test_resample(PET, MRI, tmp_path):
+    res = regseg.resample_spm(PET, MRI, MRI2PET, outpath=tmp_path / "resample")
+    res = nii.getnii(res)
     ref = nii.getnii(PET)
     assert res.shape == ref.shape
     assert not np.isnan(res).all()
 
 
-@skip_no_data
+@no_scipy_warn
 @no_matlab_warn
-def test_coreg():
-    with tmpdir() as outpath:
-        res = regseg.coreg_spm(PET, MRI, outpath=outpath)
-    assert_equal_arrays(res["affine"], MRI2PET, 1e-4)
+def test_coreg(PET, MRI, tmp_path):
+    res = regseg.coreg_spm(PET, MRI, outpath=tmp_path / "coreg")
+    assert_equal_arrays(res["affine"], MRI2PET, 5e-4)
 
-    with tmpdir() as outpath:
-        res = regseg.resample_spm(PET, MRI, res["affine"], outpath=outpath)
-        ref = regseg.resample_spm(PET, MRI, MRI2PET, outpath=outpath)
-        assert_equal_arrays(nii.getnii(res), nii.getnii(ref), 1e-4)
+    outpath = tmp_path / "resamp"
+    res = regseg.resample_spm(PET, MRI, res["affine"], outpath=outpath)
+    ref = regseg.resample_spm(PET, MRI, MRI2PET, outpath=outpath)
+    assert_equal_arrays(nii.getnii(res), nii.getnii(ref), 1e-4)
