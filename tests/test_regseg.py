@@ -53,7 +53,7 @@ def test_resample(PET, MRI, tmp_path):
 @no_matlab_warn
 def test_coreg(PET, MRI, tmp_path):
     res = regseg.coreg_spm(PET, MRI, outpath=tmp_path / "coreg")
-    assert_equal_arrays(res["affine"], MRI2PET, 1e-4)
+    assert_equal_arrays(res["affine"], MRI2PET, 5e-4)
 
     outpath = tmp_path / "resamp"
     res = regseg.resample_spm(PET, MRI, res["affine"], outpath=outpath)
