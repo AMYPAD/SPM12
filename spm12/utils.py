@@ -3,7 +3,9 @@ from functools import wraps
 from os import path
 from textwrap import dedent
 
+from miutil.fdio import extractall
 from miutil.mlab import get_engine
+from miutil.web import urlopen_cached
 from pkg_resources import resource_filename
 
 try:
@@ -37,21 +39,13 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
     if not eng.exist("spm_jobman"):
         log.warning("MATLAB could not find SPM.")
         try:
-            from zipfile import ZipFile
-
-            from brainweb import get_file
-
             log.info("Downloading to %s", cache)
-            fname = get_file(
-                "spm12.zip",
+            with urlopen_cached(
                 "https://www.fil.ion.ucl.ac.uk/"
                 "spm/download/restricted/eldorado/spm12.zip",
                 cache,
-                chunk_size=2 ** 17,
-            )
-            log.info("Extracting")
-            with ZipFile(fname) as fd:
-                fd.extractall(path=cache)
+            ) as fd:
+                extractall(fd, cache)
             eng.addpath(addpath)
             if not eng.exist("spm_jobman"):
                 raise RuntimeError("MATLAB could not find SPM.")
