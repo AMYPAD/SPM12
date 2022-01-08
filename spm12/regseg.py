@@ -1,9 +1,9 @@
 import errno
 import logging
 import os
+import re
 import shutil
 from textwrap import dedent
-import re
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -16,31 +16,25 @@ __author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
 log = logging.getLogger(__name__)
 
 
-
-
-
 def move_files(fin, opth):
-    '''
+    """
     Move input file path fin to the output folder opth.
-    '''
+    """
     fdst = os.path.join(opth, os.path.basename(fin))
     shutil.move(fin, fdst)
     return fdst
 
 
-
 def glob_re(pttrn, pth):
-    '''
+    """
     glob with regular expressions
-    '''
+    """
     m = re.compile(pttrn)
-    return [os.path.join(pth,f) for f in os.listdir(pth) if m.match(f)]
-
+    return [os.path.join(pth, f) for f in os.listdir(pth) if m.match(f)]
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
     return fwhm / (voxsize * (8 * np.log(2)) ** 0.5)
-
 
 
 def smoothim(fim, fwhm=4, fout=""):
@@ -54,7 +48,9 @@ def smoothim(fim, fwhm=4, fout=""):
 
     if not fout:
         f = nii.file_parts(fim)
-        fout = os.path.join(f[0], '{}_smo{}{}'.format(f[1], str(fwhm).replace(".", "-"), f[2]))
+        fout = os.path.join(
+            f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2])
+        )
 
     nii.array2nii(
         imsmo,
@@ -94,16 +90,16 @@ def coreg_spm(
     save_txt=True,
     modify_nii=False,
 ):
-    ''' Rigid body registration using SPM coreg function.
-        Arguments:
-        imref       - reference image
-        imflo       - floating image
-        fwhm_ref    - FWHM of the smoothing kernel for the reference image
-        fwhm_flo    - FWHM of the smoothing kernel for the reference image
+    """Rigid body registration using SPM coreg function.
+    Arguments:
+    imref       - reference image
+    imflo       - floating image
+    fwhm_ref    - FWHM of the smoothing kernel for the reference image
+    fwhm_flo    - FWHM of the smoothing kernel for the reference image
 
-        modify_nii  - modifies the affine of the NIfTI file of the floating
-                      image according to the rigid body transformation. 
-    '''
+    modify_nii  - modifies the affine of the NIfTI file of the floating
+                  image according to the rigid body transformation.
+    """
 
     # > output dictionary
     out = {}
@@ -198,10 +194,9 @@ def coreg_spm(
     )
 
     # > modify the affine of the floating image (as usually done in SPM)
-    if modify_nii: 
+    if modify_nii:
         eng.coreg_modify_affine(imflou_, Mm)
-        out['freg'] = imflou_
-
+        out["freg"] = imflou_
 
     # get the affine matrix
     M = np.array(Mm._data.tolist())
@@ -248,11 +243,11 @@ def coreg_spm(
         faff = os.path.splitext(faff)[0] + ".txt"
         np.savetxt(faff, M)
 
-    out['affine'] = M
-    out['faff'] = faff
-    out['rotations'] = x[3:]
-    out['translations'] = x[:3]
-    out['matlab_eng'] = eng
+    out["affine"] = M
+    out["faff"] = faff
+    out["rotations"] = x[3:]
+    out["translations"] = x[:3]
+    out["matlab_eng"] = eng
 
     return out
 
@@ -352,11 +347,13 @@ def resample_spm(
         fout = os.path.join(opth, fimout)
     elif pickname == "ref":
         fout = os.path.join(
-            opth, "affine_ref-" + nii.file_parts(imrefu)[1] + fcomment + ".nii.gz",
+            opth,
+            "affine_ref-" + nii.file_parts(imrefu)[1] + fcomment + ".nii.gz",
         )
     elif pickname == "flo":
         fout = os.path.join(
-            opth, "affine_flo-" + nii.file_parts(imflo)[1] + fcomment + ".nii.gz",
+            opth,
+            "affine_flo-" + nii.file_parts(imflo)[1] + fcomment + ".nii.gz",
         )
     # change the file name
     os.rename(fim + ".gz", fout)
@@ -372,42 +369,42 @@ def resample_spm(
     return fout
 
 
-
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # SEGMENTATION
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def seg_spm(
-        f_mri,
-        spm_path,
-        matlab_eng_name='',
-        outpath=None,
-        store_nat_gm=False,
-        store_nat_wm=False,
-        store_nat_csf=False,
-        store_fwd=False,
-        store_inv=False,
-        visual=False):
+    f_mri,
+    spm_path,
+    matlab_eng_name="",
+    outpath=None,
+    store_nat_gm=False,
+    store_nat_wm=False,
+    store_nat_csf=False,
+    store_fwd=False,
+    store_inv=False,
+    visual=False,
+):
 
-    ''' perform normalisation/segmentation using SPM12.
-        Arguments:
-        f_mri   - file path to the T1w MRI file
-        spm_path- SPM path (string)
-        matlab_eng_name - name of the Python engine for Matlab.  
-        outpath - output folder path for the normalisation file output
-        store_nat_* - stores native space segmentation output for either
-                      grey matter, white matter or CSF.
-        sotre_fwd/inv - stores forward/inverse normalisation definitions
-        visual  - shows the Matlab window progress
-    '''
+    """perform normalisation/segmentation using SPM12.
+    Arguments:
+    f_mri   - file path to the T1w MRI file
+    spm_path- SPM path (string)
+    matlab_eng_name - name of the Python engine for Matlab.
+    outpath - output folder path for the normalisation file output
+    store_nat_* - stores native space segmentation output for either
+                  grey matter, white matter or CSF.
+    sotre_fwd/inv - stores forward/inverse normalisation definitions
+    visual  - shows the Matlab window progress
+    """
 
     # > output dictionary
     out = {}
-    
+
     # > get Matlab engine or use the provided one
     eng = ensure_spm(matlab_eng_name)
 
     # > run SPM normalisation/segmentation
-    param,invdef,fordef = eng.seg_spm_m(
+    param, invdef, fordef = eng.seg_spm_m(
         f_mri,
         str(spm_path),
         float(store_nat_gm),
@@ -416,80 +413,79 @@ def seg_spm(
         float(store_fwd),
         float(store_inv),
         float(visual),
-        nargout=3
+        nargout=3,
     )
 
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # > organise the output
     if outpath is not None:
         create_dir(outpath)
 
-        out['param']  = move_files(param, outpath)
-        out['invdef'] = move_files(invdef, outpath)
-        out['fordef'] = move_files(fordef, outpath)
+        out["param"] = move_files(param, outpath)
+        out["invdef"] = move_files(invdef, outpath)
+        out["fordef"] = move_files(fordef, outpath)
 
         # > go through tissue types and move them to the output folder
-        cs = glob_re(r'c\d*', os.path.dirname(param))
+        cs = glob_re(r"c\d*", os.path.dirname(param))
         for c in cs:
             nm = os.path.basename(c)[:2]
             out[nm] = move_files(c, outpath)
-    
-    else:
-        out['param']  = param
-        out['invdef'] = invdef
-        out['fordef'] = fordef
 
-        cs = glob_re(r'c\d*', os.path.dirname(param))
+    else:
+        out["param"] = param
+        out["invdef"] = invdef
+        out["fordef"] = fordef
+
+        cs = glob_re(r"c\d*", os.path.dirname(param))
         for c in cs:
             nm = os.path.basename(c)[:2]
             out[nm] = c
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     return out
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # NORMALISATION WRITE
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def normw_spm(
-        f_def,
-        files4norm,
-        matlab_eng_name='',
-        outpath=None):
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
 
-    ''' 
+    """
     Write normalisation output to NIfTI files using SPM12.
     Arguments:
     f_def   - NIfTI file of definitions for non-rigid normalisation
     files4norm - list of input NIfTI file paths in format ['file, 1']
     matlab_eng_name - name of the Python engine for Matlab.
     outpath - output folder path for the normalisation files
-    '''
+    """
 
     eng = ensure_spm(matlab_eng_name)  # get_matlab
 
-    eng.normw_spm_m(
-        f_def,
-        files4norm
-    )
+    eng.normw_spm_m(f_def, files4norm)
 
     # > output list
     out = []
 
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # > organise the output
     if outpath is not None:
         create_dir(outpath)
 
         for f in files4norm:
-            fpth = f.split(',')[0]
-            out.append(move_files(os.path.join(os.path.dirname(fpth), 'w'+os.path.basename(fpth)), outpath))
+            fpth = f.split(",")[0]
+            out.append(
+                move_files(
+                    os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
+                    outpath,
+                )
+            )
     else:
-        out.append('w'+os.path.basename(f.split(',')[0]))
+        out.append("w" + os.path.basename(f.split(",")[0]))
 
     return out
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
