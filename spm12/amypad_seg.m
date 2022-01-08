@@ -1,6 +1,4 @@
-function [param,invdef,fordef] = seg_spm_m(f_mri, spm_path, nat_gm, nat_wm, nat_csf, store_fwd, store_inv, visual)
-
-
+function [param,invdef,fordef] = amypad_seg(f_mri, spm_path, nat_gm, nat_wm, nat_csf, store_fwd, store_inv, visual)
     job.channel.vols = {strcat(f_mri,',1')};
     job.channel.biasreg = 0.001;
     job.channel.biasfwhm = 60;
@@ -36,19 +34,13 @@ function [param,invdef,fordef] = seg_spm_m(f_mri, spm_path, nat_gm, nat_wm, nat_
     job.warp.fwhm = 0;
     job.warp.samp = 3;
     job.warp.write = [store_fwd, store_inv];
-
     if visual>0
         Finter = spm_figure('GetWin','Interactive');
     end
-
     spm_jobman('initcfg');
-
     segout = spm_preproc_run(job);
-
     param  = segout.param{1};
     invdef = segout.invdef{1};
     fordef = segout.fordef{1};
-
     %disp(segout);
-
 end

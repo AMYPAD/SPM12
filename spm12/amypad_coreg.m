@@ -1,4 +1,4 @@
-function [M, x] = coreg_spm_m(imref, imflo, costfun, sep, tol, fwhm, params, graphics, visual)
+function [M, x] = amypad_coreg(imref, imflo, costfun, sep, tol, fwhm, params, graphics, visual)
     if visual>0
         Fgraph = spm_figure('GetWin','Graphics');
         Finter = spm_figure('GetWin','Interactive');
