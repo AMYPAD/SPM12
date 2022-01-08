@@ -10,7 +10,7 @@ import scipy.ndimage as ndi
 from miutil import create_dir, hasext
 from miutil.imio import nii
 
-from .utils import ensure_spm
+from .utils import ensure_spm, spm_dir
 
 __author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
 log = logging.getLogger(__name__)
@@ -362,7 +362,7 @@ def resample_spm(
 
 def seg_spm(
     f_mri,
-    spm_path,
+    spm_path=None,
     matlab_eng_name="",
     outpath=None,
     store_nat_gm=False,
@@ -387,6 +387,8 @@ def seg_spm(
     out = {}  # output dictionary
     # get Matlab engine or use the provided one
     eng = ensure_spm(matlab_eng_name)
+    if not spm_path:
+        spm_path = spm_dir()
     # run SPM normalisation/segmentation
     param, invdef, fordef = eng.amypad_seg(
         f_mri,
