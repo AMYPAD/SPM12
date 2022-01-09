@@ -25,12 +25,11 @@ def move_files(fin, opth):
     return fdst
 
 
-def glob_re(pttrn, pth):
+def glob_match(pttrn, pth):
     """
     glob with regular expressions
     """
-    m = re.compile(pttrn)
-    return [os.path.join(pth, f) for f in os.listdir(pth) if m.match(f)]
+    return (os.path.join(pth, f) for f in os.listdir(pth) if re.match(pttrn, f))
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
@@ -45,13 +44,11 @@ def smoothim(fim, fwhm=4, fout=""):
     imsmo = ndi.filters.gaussian_filter(
         imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]), mode="mirror"
     )
-
     if not fout:
         f = nii.file_parts(fim)
         fout = os.path.join(
             f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2])
         )
-
     nii.array2nii(
         imsmo,
         imd["affine"],
@@ -63,7 +60,6 @@ def smoothim(fim, fwhm=4, fout=""):
         ),
         flip=imd["flip"],
     )
-
     return {"im": imsmo, "fim": fout, "fwhm": fwhm, "affine": imd["affine"]}
 
 
@@ -99,7 +95,6 @@ def coreg_spm(
         image according to the rigid body transformation.
     """
     out = {}  # output dictionary
-
     sep = sep or [4, 2]
     tol = tol or [
         0.0200,
@@ -127,7 +122,7 @@ def coreg_spm(
     log.debug("output path:%s", opth)
     create_dir(opth)
 
-    # > decompress ref image as necessary
+    # decompress ref image as necessary
     if hasext(imref, "gz"):
         imrefu = nii.nii_ugzip(imref, outpath=opth)
     else:
@@ -137,8 +132,7 @@ def coreg_spm(
 
     if fwhm_ref > 0:
         smodct = smoothim(imrefu, fwhm_ref)
-
-        # > delete the previous version (non-smoothed)
+        # delete the previous version (non-smoothed)
         os.remove(imrefu)
         imrefu = smodct["fim"]
 
@@ -148,7 +142,7 @@ def coreg_spm(
             )
         )
 
-    # > floating
+    # floating
     if hasext(imflo, "gz"):
         imflou = nii.nii_ugzip(imflo, outpath=opth)
     else:
@@ -158,11 +152,11 @@ def coreg_spm(
 
     if fwhm_flo > 0:
         smodct = smoothim(imflou, fwhm_flo)
-        # > delete the previous version (non-smoothed)
+        # delete the previous version (non-smoothed)
         if not modify_nii:
             os.remove(imflou)
         else:
-            # > save the uncompressed and unsmoothed version
+            # save the uncompressed and unsmoothed version
             imflou_ = imflou
 
         imflou = smodct["fim"]
@@ -189,7 +183,7 @@ def coreg_spm(
         nargout=2,
     )
 
-    # > modify the affine of the floating image (as usually done in SPM)
+    # modify the affine of the floating image (as usually done in SPM)
     if modify_nii:
         eng.amypad_coreg_modify_affine(imflou_, Mm)
         out["freg"] = imflou_
@@ -222,13 +216,13 @@ def coreg_spm(
                 "affine-flo-" + nii.file_parts(imflo)[1] + fcomment + ".npy",
             )
     else:
-        # > add '.npy' extension if not in the affine output file name
+        # add '.npy' extension if not in the affine output file name
         if not fname_aff.endswith(".npy"):
             fname_aff += ".npy"
 
         faff = os.path.join(opth, "affine-spm", fname_aff)
 
-    # > safe the affine transformation
+    # save the affine transformation
     if save_arr:
         np.save(faff, M)
     if save_txt:
@@ -281,7 +275,7 @@ def resample_spm(
     log.debug("output path:%s", opth)
     create_dir(opth)
 
-    # > decompress if necessary
+    # decompress if necessary
     if hasext(imref, "gz"):
         imrefu = nii.nii_ugzip(imref, outpath=opth)
     else:
@@ -289,7 +283,7 @@ def resample_spm(
         imrefu = os.path.join(opth, fnm)
         shutil.copyfile(imref, imrefu)
 
-    # > floating
+    # floating
     if hasext(imflo, "gz"):
         imflou = nii.nii_ugzip(imflo, outpath=opth)
     else:
@@ -333,7 +327,7 @@ def resample_spm(
     if del_out_uncmpr:
         os.remove(fim)
 
-    # > the compressed output naming
+    # the compressed output naming
     if fimout:
         fout = os.path.join(opth, fimout)
     elif pickname == "ref":
@@ -407,8 +401,7 @@ def seg_spm(
         out["invdef"] = move_files(invdef, outpath)
         out["fordef"] = move_files(fordef, outpath)
         # go through tissue types and move them to the output folder
-        cs = glob_re(r"c\d*", os.path.dirname(param))
-        for c in cs:
+        for c in glob_match(r"c\d*", os.path.dirname(param)):
             nm = os.path.basename(c)[:2]
             out[nm] = move_files(c, outpath)
     else:
@@ -416,15 +409,13 @@ def seg_spm(
         out["invdef"] = invdef
         out["fordef"] = fordef
 
-        cs = glob_re(r"c\d*", os.path.dirname(param))
-        for c in cs:
+        for c in glob_match(r"c\d*", os.path.dirname(param)):
             nm = os.path.basename(c)[:2]
             out[nm] = c
     return out
 
 
 def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
-
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
