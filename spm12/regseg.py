@@ -42,7 +42,7 @@ def smoothim(fim, fwhm=4, fout=""):
     """
     imd = nii.getnii(fim, output="all")
     imsmo = ndi.filters.gaussian_filter(
-        imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]), mode="mirror"
+        imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]), mode="constant"
     )
     if not fout:
         f = nii.file_parts(fim)
