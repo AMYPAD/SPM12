@@ -12,14 +12,10 @@ def folder_in():
     Ab_PET_mMR_test = HOME / "Ab_PET_mMR_test"
     if not Ab_PET_mMR_test.is_dir():
         skip(
-            dedent(
-                """\
+            dedent("""\
             Cannot find Ab_PET_mMR_test in ${DATA_ROOT:-~} (%s).
             Try running `python -m tests` to download it.
-            """
-            )
-            % HOME
-        )
+            """) % HOME)
     return Ab_PET_mMR_test
 
 
@@ -28,15 +24,11 @@ def folder_ref(folder_in):
     Ab_PET_mMR_ref = folder_in / "testing_reference" / "Ab_PET_mMR_ref"
     if not Ab_PET_mMR_ref.is_dir():
         skip(
-            dedent(
-                """\
+            dedent("""\
             Cannot find Ab_PET_mMR_ref in
             ${DATA_ROOT:-~}/testing_reference (%s/testing_reference).
             Try running `python -m tests` to download it.
-            """
-            )
-            % HOME
-        )
+            """) % HOME)
     return Ab_PET_mMR_ref
 
 

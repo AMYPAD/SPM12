@@ -6,9 +6,7 @@ from miutil.web import urlopen_cached
 from .conftest import HOME
 
 log = logging.getLogger(__name__)
-DATA_URL = (
-    "https://zenodo.org/record/3877529/files/amyloidPET_FBP_TP0_extra.zip?download=1"
-)
+DATA_URL = ("https://zenodo.org/record/3877529/files/amyloidPET_FBP_TP0_extra.zip?download=1")
 
 
 def main():
