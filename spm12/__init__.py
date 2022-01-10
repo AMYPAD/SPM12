@@ -1,5 +1,5 @@
-from .regseg import *  # NOQA
-from .utils import *  # NOQA
+from .regseg import *  # yapf: disable # NOQA
+from .utils import *  # yapf: disable # NOQA
 
 # version detector. Precedence: installed dist, git, 'UNKNOWN'
 try:

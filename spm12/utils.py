@@ -12,7 +12,7 @@ from pkg_resources import resource_filename
 
 try:
     from functools import lru_cache
-except ImportError:  # fix py2.7
+except ImportError: # fix py2.7
     from backports.functools_lru_cache import lru_cache
 
 __all__ = ["ensure_spm", "get_matlab", "spm_dir"]
@@ -48,14 +48,11 @@ def mcr_run(*cmd, cache="~/.spm12", version=12, mcr_version=713):
         return check_output((runner, mcr_root) + cmd).decode("U8").strip()
     except CalledProcessError as err:
         raise RuntimeError(
-            dedent(
-                """\
+            dedent("""\
             {}
 
             See https://en.wikibooks.org/wiki/SPM/Standalone#Trouble-shooting
-            """
-            ).format(err)
-        )
+            """).format(err))
 
 
 @lru_cache()
@@ -91,15 +88,12 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
             if not eng.exist("spm_jobman"):
                 raise RuntimeError("MATLAB could not find SPM.")
             log.info("Installed")
-        except:  # NOQA: E722,B001
+        except:                # NOQA: E722,B001
             raise ImportError(
-                dedent(
-                    """\
+                dedent("""\
                 MATLAB could not find SPM.
                 Please follow installation instructions at
                 https://en.wikibooks.org/wiki/SPM/Download
                 Make sure to add SPM to MATLAB's path using `startup.m`
-                """
-                )
-            )
+                """))
     return eng

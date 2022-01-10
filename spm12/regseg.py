@@ -33,7 +33,7 @@ def glob_match(pttrn, pth):
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
-    return fwhm / (voxsize * (8 * np.log(2)) ** 0.5)
+    return fwhm / (voxsize * (8 * np.log(2))**0.5)
 
 
 def smoothim(fim, fwhm=4, fout=""):
@@ -41,14 +41,11 @@ def smoothim(fim, fwhm=4, fout=""):
     Smooth image using Gaussian filter with FWHM given as an option.
     """
     imd = nii.getnii(fim, output="all")
-    imsmo = ndi.filters.gaussian_filter(
-        imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]), mode="constant"
-    )
+    imsmo = ndi.filters.gaussian_filter(imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]),
+                                        mode="constant")
     if not fout:
         f = nii.file_parts(fim)
-        fout = os.path.join(
-            f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2])
-        )
+        fout = os.path.join(f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2]))
     nii.array2nii(
         imsmo,
         imd["affine"],
@@ -95,24 +92,15 @@ def coreg_spm(
         image according to the rigid body transformation.
     """
     out = {}  # output dictionary
+
     sep = sep or [4, 2]
     tol = tol or [
-        0.0200,
-        0.0200,
-        0.0200,
-        0.0010,
-        0.0010,
-        0.0010,
-        0.0100,
-        0.0100,
-        0.0100,
-        0.0010,
-        0.0010,
-        0.0010,
-    ]
+        0.0200, 0.0200, 0.0200, 0.0010, 0.0010, 0.0010, 0.0100, 0.0100, 0.0100, 0.0010, 0.0010,
+        0.0010]
     fwhm = fwhm or [7, 7]
     params = params or [0, 0, 0, 0, 0, 0]
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+
+    eng = ensure_spm(matlab_eng_name) # get_matlab
 
     if not outpath and fname_aff and "/" in fname_aff:
         opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
@@ -135,12 +123,7 @@ def coreg_spm(
         # delete the previous version (non-smoothed)
         os.remove(imrefu)
         imrefu = smodct["fim"]
-
-        log.info(
-            "smoothed the reference image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
-            )
-        )
+        log.info("smoothed the reference image with FWHM=%r and saved to\n%r", fwhm_ref, imrefu)
 
     # floating
     if hasext(imflo, "gz"):
@@ -158,14 +141,8 @@ def coreg_spm(
         else:
             # save the uncompressed and unsmoothed version
             imflou_ = imflou
-
         imflou = smodct["fim"]
-
-        log.info(
-            "smoothed the floating image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
-            )
-        )
+        log.info("smoothed the floating image with FWHM=%r and saved to\n%r", fwhm_ref, imrefu)
 
     # run the MATLAB SPM registration
     import matlab as ml
@@ -257,16 +234,13 @@ def resample_spm(
     del_out_uncmpr=False,
 ):
     log.debug(
-        dedent(
-            """\
+        dedent("""\
         ======================================================================
-         S P M  inputs:
-         > ref:' {}
-         > flo:' {}
-        ======================================================================"""
-        ).format(imref, imflo)
-    )
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+        SPM inputs:
+        > ref: %r
+        > flo: %r
+        ======================================================================"""), imref, imflo)
+    eng = ensure_spm(matlab_eng_name) # get_matlab
 
     if not outpath and fimout:
         opth = os.path.dirname(fimout) or os.path.dirname(imflo)
@@ -299,9 +273,7 @@ def resample_spm(
             M = np.load(M)
             log.info("matrix M given in the form of NumPy file")
         else:
-            raise IOError(
-                errno.ENOENT, M, "Unrecognised file extension for the affine."
-            )
+            raise IOError(errno.ENOENT, M, "Unrecognised file extension for the affine.")
     elif isinstance(M, (np.ndarray, np.generic)):
         log.info("matrix M given in the form of Numpy array")
     else:
@@ -310,9 +282,7 @@ def resample_spm(
     # run the Matlab SPM resampling
     import matlab as ml
 
-    eng.amypad_resample(
-        imrefu, imflou, ml.double(M.tolist()), mask, mean, intrp, which, prefix
-    )
+    eng.amypad_resample(imrefu, imflou, ml.double(M.tolist()), mask, mean, intrp, which, prefix)
 
     # -compress the output
     split = os.path.split(imflou)
@@ -345,11 +315,7 @@ def resample_spm(
 
     if fwhm > 0:
         smodct = smoothim(fout, fwhm)
-        log.info(
-            "smoothed the resampled image with FWHM={} and saved to\n{}".format(
-                fwhm, smodct["fim"]
-            )
-        )
+        log.info("smoothed the resampled image with FWHM=%r and saved to\n%r", fwhm, smodct["fim"])
 
     return fout
 
@@ -379,11 +345,13 @@ def seg_spm(
       visual: shows the Matlab window progress
     """
     out = {}  # output dictionary
+
     # get Matlab engine or use the provided one
     eng = ensure_spm(matlab_eng_name)
     if not spm_path:
         spm_path = spm_dir()
-    # run SPM normalisation/segmentation
+
+        # run SPM normalisation/segmentation
     param, invdef, fordef = eng.amypad_seg(
         f_mri,
         str(spm_path),
@@ -400,6 +368,7 @@ def seg_spm(
         out["param"] = move_files(param, outpath)
         out["invdef"] = move_files(invdef, outpath)
         out["fordef"] = move_files(fordef, outpath)
+
         # go through tissue types and move them to the output folder
         for c in glob_match(r"c\d*", os.path.dirname(param)):
             nm = os.path.basename(c)[:2]
@@ -424,19 +393,17 @@ def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
       matlab_eng_name: name of the Python engine for Matlab.
       outpath: output folder path for the normalisation files
     """
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+    eng = ensure_spm(matlab_eng_name) # get_matlab
     eng.amypad_normw(f_def, files4norm)
-    out = []  # output list
+    out = []                          # output list
+
     if outpath is not None:
         create_dir(outpath)
         for f in files4norm:
-            fpth = f.split(",")[0]
+            fpth = f.rsplit(",", 1)[0]
             out.append(
-                move_files(
-                    os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
-                    outpath,
-                )
-            )
+                move_files(os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
+                           outpath))
     else:
         out.append("w" + os.path.basename(f.split(",")[0]))
     return out

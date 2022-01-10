@@ -19,9 +19,7 @@ log = logging.getLogger(__name__)
 
 
 def main(argv=None):
-    logging.basicConfig(
-        level=logging.DEBUG, format="%(levelname)s:%(funcName)s:%(message)s"
-    )
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(funcName)s:%(message)s")
     args = argopt(__doc__).parse_args(argv)
     log.info(args)
     if isinstance(args.command, str):
