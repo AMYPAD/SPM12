@@ -13,7 +13,7 @@ try:
 except ImportError:  # fix py2.7
     from backports.functools_lru_cache import lru_cache
 
-__all__ = ["get_matlab", "ensure_spm"]
+__all__ = ["ensure_spm", "get_matlab", "spm_dir"]
 PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
@@ -26,14 +26,19 @@ def get_matlab(name=None):
     return eng
 
 
+def spm_dir(cache="~/.spm12", version=12):
+    cache = path.expanduser(cache)
+    if str(version) != "12":
+        raise NotImplementedError
+    return path.join(cache, "spm12")
+
+
 @lru_cache()
 @wraps(get_matlab)
 def ensure_spm(name=None, cache="~/.spm12", version=12):
     eng = get_matlab(name)
     cache = path.expanduser(cache)
-    if str(version) != "12":
-        raise NotImplementedError
-    addpath = path.join(cache, "spm12")
+    addpath = spm_dir(cache=cache, version=version)
     if path.exists(addpath):
         eng.addpath(addpath)
     if not eng.exist("spm_jobman"):

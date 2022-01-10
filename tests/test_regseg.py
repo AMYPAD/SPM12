@@ -34,7 +34,14 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
         y: {:.3g}/{:.3g}/{:.3g}({:.3g})
         """
         ).format(
-            x.min(), x.mean(), x.max(), x.std(), y.min(), y.mean(), y.max(), y.std(),
+            x.min(),
+            x.mean(),
+            x.max(),
+            x.std(),
+            y.min(),
+            y.mean(),
+            y.max(),
+            y.std(),
         )
     )
 

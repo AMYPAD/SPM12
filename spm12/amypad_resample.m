@@ -1,4 +1,4 @@
-function out = resample_spm_m(imref, imflo, M, f_mask, f_mean, f_interp, f_which, f_prefix)
+function out = amypad_resample(imref, imflo, M, f_mask, f_mean, f_interp, f_which, f_prefix)
     %-Reslicing parameters
     rflags.mask = f_mask;
     rflags.mean = f_mean;
