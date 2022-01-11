@@ -70,6 +70,7 @@ def coreg_spm(
     fwhm_ref=0,
     fwhm_flo=0,
     outpath="",
+    output_eng=False,
     fname_aff="",
     fcomment="",
     pickname="ref",
@@ -233,7 +234,8 @@ def coreg_spm(
     out["faff"] = faff
     out["rotations"] = x[3:]
     out["translations"] = x[:3]
-    out["matlab_eng"] = eng
+    if output_eng:
+        out["matlab_eng"] = eng
     return out
 
 
