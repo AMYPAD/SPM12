@@ -164,7 +164,7 @@ def coreg_spm(
 
         log.info(
             "smoothed the floating image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
+                fwhm_flo, imflou
             )
         )
 
