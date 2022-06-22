@@ -417,7 +417,7 @@ def seg_spm(
     return out
 
 
-def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
+def normw_spm(f_def, files4norm, voxsz=2, matlab_eng_name="", outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
@@ -427,7 +427,7 @@ def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
       outpath: output folder path for the normalisation files
     """
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm)
+    eng.amypad_normw(f_def, files4norm, voxsz)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)
