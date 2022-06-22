@@ -417,7 +417,7 @@ def seg_spm(
     return out
 
 
-def normw_spm(f_def, files4norm, voxsz=2., intrp=4, matlab_eng_name="", outpath=None):
+def normw_spm(f_def, files4norm, voxsz=2., intrp=4., matlab_eng_name="", outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
