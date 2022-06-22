@@ -417,17 +417,20 @@ def seg_spm(
     return out
 
 
-def normw_spm(f_def, files4norm, voxsz=2, matlab_eng_name="", outpath=None):
+def normw_spm(f_def, files4norm, voxsz=2., intrp=4, matlab_eng_name="", outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
       f_def: NIfTI file of definitions for non-rigid normalisation
       files4norm: list of input NIfTI file paths in format ['file, 1']
+      voxsz: voxel size of the output (normalised) images
+      intrp: interpolation level used for the normalised images 
+             (4: B-spline, default)
       matlab_eng_name: name of the Python engine for Matlab.
       outpath: output folder path for the normalisation files
     """
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm, voxsz)
+    eng.amypad_normw(f_def, files4norm, voxsz, intrp)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)
