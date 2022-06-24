@@ -4,11 +4,12 @@ import os
 import re
 import shutil
 from textwrap import dedent
+from pathlib import Path, PurePath
 
 import numpy as np
 import scipy.ndimage as ndi
 from miutil import create_dir, hasext
-from miutil.imio import nii
+from miutil.imio import nii, getnii
 
 from .utils import ensure_spm, spm_dir
 
@@ -61,6 +62,45 @@ def smoothim(fim, fwhm=4, fout=""):
         flip=imd["flip"],
     )
     return {"im": imsmo, "fim": fout, "fwhm": fwhm, "affine": imd["affine"]}
+
+#---------------------------------------------------------------------
+def get_bbox(fnii):
+    ''' get the SPM equivalent of the bounding box for
+        any NIfTI image.
+    '''
+
+
+    if isinstance(fnii, (str, PurePath)):
+        niidct = getnii(fnii, output='all')
+    elif isinstance(fnii, dict) and 'hdr' in fnii:
+        niidct = fnii
+    else:
+        raise ValueError('incorrect input NIfTI file/dictionary')
+
+    
+    dim = niidct['hdr']['dim']
+    corners = np.array([
+        [1,1,1,1],
+        [1,1,dim[3],1],
+        [1,dim[2],1,1],
+        [1,dim[2],dim[3],1],
+        [dim[1],1,1,1],
+        [dim[1],1,dim[3],1],
+        [dim[1],dim[2],1,1],
+        [dim[1],dim[2],dim[3],1],
+        ])
+
+    XYZ = np.dot(trmpet['affine'][:3,:], corners.T)
+
+    # > weird correction for SPM bounding box (??)
+    crr = np.dot(trmpet['affine'][:3,:3],[1,1,1])
+
+    # > bounding box as matrix
+    bbox = numpy.concatenate((np.min(XYZ,axis=1)-crr, np.max(XYZ,axis=1)-crr))
+    bbox.shape = (2,3)
+
+    return bbox
+#---------------------------------------------------------------------
 
 
 def coreg_spm(
