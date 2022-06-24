@@ -417,7 +417,14 @@ def seg_spm(
     return out
 
 
-def normw_spm(f_def, files4norm, voxsz=2., intrp=4., matlab_eng_name="", outpath=None):
+def normw_spm(
+    f_def,
+    files4norm,
+    voxsz=2.,
+    intrp=4.,
+    bbox=None,
+    matlab_eng_name="",
+    outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
@@ -429,8 +436,19 @@ def normw_spm(f_def, files4norm, voxsz=2., intrp=4., matlab_eng_name="", outpath
       matlab_eng_name: name of the Python engine for Matlab.
       outpath: output folder path for the normalisation files
     """
+
+    import matlab as ml
+    if bbox is None:
+        bb = ml.double([[NaN,NaN,NaN],[NaN,NaN,NaN]])
+    elif isinstance(bbox, np.ndarray) and bbox.shape==(2,3):
+        bb = ml.double(bbox.tolist())
+    elif isinstance(bbox, list) and len(bbox)==2:
+        bb = ml.double(bbox)
+    else:
+        raise ValueError('unrecognised format for bounding box')
+
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm, voxsz, intrp)
+    eng.amypad_normw(f_def, files4norm, voxsz, intrp, bb)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)
