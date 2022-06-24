@@ -439,7 +439,7 @@ def normw_spm(
 
     import matlab as ml
     if bbox is None:
-        bb = ml.double([[NaN,NaN,NaN],[NaN,NaN,NaN]])
+        bb = ml.double([[np.NaN,np.NaN,np.NaN],[np.NaN,np.NaN,np.NaN]])
     elif isinstance(bbox, np.ndarray) and bbox.shape==(2,3):
         bb = ml.double(bbox.tolist())
     elif isinstance(bbox, list) and len(bbox)==2:
