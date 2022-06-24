@@ -66,7 +66,7 @@ def smoothim(fim, fwhm=4, fout=""):
 #---------------------------------------------------------------------
 def get_bbox(fnii):
     ''' get the SPM equivalent of the bounding box for
-        any NIfTI image.
+        NIfTI image `fnii` which can be a dictionary or file.
     '''
 
 
