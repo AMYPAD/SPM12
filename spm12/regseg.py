@@ -96,7 +96,7 @@ def get_bbox(fnii):
     crr = np.dot(niidct['affine'][:3,:3],[1,1,1])
 
     # > bounding box as matrix
-    bbox = numpy.concatenate((np.min(XYZ,axis=1)-crr, np.max(XYZ,axis=1)-crr))
+    bbox = np.concatenate((np.min(XYZ,axis=1)-crr, np.max(XYZ,axis=1)-crr))
     bbox.shape = (2,3)
 
     return bbox
