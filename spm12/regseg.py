@@ -90,10 +90,10 @@ def get_bbox(fnii):
         [dim[1],dim[2],dim[3],1],
         ])
 
-    XYZ = np.dot(trmpet['affine'][:3,:], corners.T)
+    XYZ = np.dot(niidct['affine'][:3,:], corners.T)
 
     # > weird correction for SPM bounding box (??)
-    crr = np.dot(trmpet['affine'][:3,:3],[1,1,1])
+    crr = np.dot(niidct['affine'][:3,:3],[1,1,1])
 
     # > bounding box as matrix
     bbox = numpy.concatenate((np.min(XYZ,axis=1)-crr, np.max(XYZ,axis=1)-crr))
