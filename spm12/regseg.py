@@ -9,7 +9,7 @@ from pathlib import Path, PurePath
 import numpy as np
 import scipy.ndimage as ndi
 from miutil import create_dir, hasext
-from miutil.imio import nii, getnii
+from miutil.imio import nii
 
 from .utils import ensure_spm, spm_dir
 
@@ -71,7 +71,7 @@ def get_bbox(fnii):
 
 
     if isinstance(fnii, (str, PurePath)):
-        niidct = getnii(fnii, output='all')
+        niidct = nii.getnii(fnii, output='all')
     elif isinstance(fnii, dict) and 'hdr' in fnii:
         niidct = fnii
     else:
