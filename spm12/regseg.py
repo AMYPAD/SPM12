@@ -47,9 +47,7 @@ def smoothim(fim, fwhm=4, fout=""):
     )
     if not fout:
         f = nii.file_parts(fim)
-        fout = os.path.join(
-            f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2])
-        )
+        fout = os.path.join(f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2]))
     nii.array2nii(
         imsmo,
         imd["affine"],
@@ -177,9 +175,7 @@ def coreg_spm(
         imrefu = smodct["fim"]
 
         log.info(
-            "smoothed the reference image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
-            )
+            "smoothed the reference image with FWHM={} and saved to\n{}".format(fwhm_ref, imrefu)
         )
 
     # floating
@@ -202,9 +198,7 @@ def coreg_spm(
         imflou = smodct["fim"]
 
         log.info(
-            "smoothed the floating image with FWHM={} and saved to\n{}".format(
-                fwhm_flo, imflou
-            )
+            "smoothed the floating image with FWHM={} and saved to\n{}".format(fwhm_flo, imflou)
         )
 
     # run the MATLAB SPM registration
@@ -340,9 +334,7 @@ def resample_spm(
             M = np.load(M)
             log.info("matrix M given in the form of NumPy file")
         else:
-            raise IOError(
-                errno.ENOENT, M, "Unrecognised file extension for the affine."
-            )
+            raise IOError(errno.ENOENT, M, "Unrecognised file extension for the affine.")
     elif isinstance(M, (np.ndarray, np.generic)):
         log.info("matrix M given in the form of Numpy array")
     else:
@@ -463,9 +455,7 @@ def seg_spm(
     return out
 
 
-def normw_spm(
-    f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name="", outpath=None
-):
+def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name="", outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:

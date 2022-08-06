@@ -8,3 +8,4 @@ write_to_template = "__version__ = '{version}'\n"
 
 [tool.black]
 target_version = ["py36", "py310"]
+line_length = 99

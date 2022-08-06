@@ -41,8 +41,7 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
         try:
             log.info("Downloading to %s", cache)
             with urlopen_cached(
-                "https://www.fil.ion.ucl.ac.uk/"
-                "spm/download/restricted/eldorado/spm12.zip",
+                "https://www.fil.ion.ucl.ac.uk/spm/download/restricted/eldorado/spm12.zip",
                 cache,
             ) as fd:
                 extractall(fd, cache)
