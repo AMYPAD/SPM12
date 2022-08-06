@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import shutil
+from pathlib import PurePath
 from textwrap import dedent
 
 import numpy as np
@@ -46,9 +47,7 @@ def smoothim(fim, fwhm=4, fout=""):
     )
     if not fout:
         f = nii.file_parts(fim)
-        fout = os.path.join(
-            f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2])
-        )
+        fout = os.path.join(f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2]))
     nii.array2nii(
         imsmo,
         imd["affine"],
@@ -63,6 +62,44 @@ def smoothim(fim, fwhm=4, fout=""):
     return {"im": imsmo, "fim": fout, "fwhm": fwhm, "affine": imd["affine"]}
 
 
+def get_bbox(fnii):
+    """get the SPM equivalent of the bounding box for
+    NIfTI image `fnii` which can be a dictionary or file.
+    """
+
+    if isinstance(fnii, (str, PurePath)):
+        niidct = nii.getnii(fnii, output="all")
+    elif isinstance(fnii, dict) and "hdr" in fnii:
+        niidct = fnii
+    else:
+        raise ValueError("incorrect input NIfTI file/dictionary")
+
+    dim = niidct["hdr"]["dim"]
+    corners = np.array(
+        [
+            [1, 1, 1, 1],
+            [1, 1, dim[3], 1],
+            [1, dim[2], 1, 1],
+            [1, dim[2], dim[3], 1],
+            [dim[1], 1, 1, 1],
+            [dim[1], 1, dim[3], 1],
+            [dim[1], dim[2], 1, 1],
+            [dim[1], dim[2], dim[3], 1],
+        ]
+    )
+
+    XYZ = np.dot(niidct["affine"][:3, :], corners.T)
+
+    # FIXME: weird correction for SPM bounding box (??)
+    crr = np.dot(niidct["affine"][:3, :3], [1, 1, 1])
+
+    # bounding box as matrix
+    bbox = np.concatenate((np.min(XYZ, axis=1) - crr, np.max(XYZ, axis=1) - crr))
+    bbox.shape = (2, 3)
+
+    return bbox
+
+
 def coreg_spm(
     imref,
     imflo,
@@ -70,6 +107,7 @@ def coreg_spm(
     fwhm_ref=0,
     fwhm_flo=0,
     outpath="",
+    output_eng=False,
     fname_aff="",
     fcomment="",
     pickname="ref",
@@ -137,9 +175,7 @@ def coreg_spm(
         imrefu = smodct["fim"]
 
         log.info(
-            "smoothed the reference image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
-            )
+            "smoothed the reference image with FWHM={} and saved to\n{}".format(fwhm_ref, imrefu)
         )
 
     # floating
@@ -162,9 +198,7 @@ def coreg_spm(
         imflou = smodct["fim"]
 
         log.info(
-            "smoothed the floating image with FWHM={} and saved to\n{}".format(
-                fwhm_ref, imrefu
-            )
+            "smoothed the floating image with FWHM={} and saved to\n{}".format(fwhm_flo, imflou)
         )
 
     # run the MATLAB SPM registration
@@ -233,7 +267,8 @@ def coreg_spm(
     out["faff"] = faff
     out["rotations"] = x[3:]
     out["translations"] = x[:3]
-    out["matlab_eng"] = eng
+    if output_eng:
+        out["matlab_eng"] = eng
     return out
 
 
@@ -243,7 +278,7 @@ def resample_spm(
     M,
     matlab_eng_name="",
     fwhm=0,
-    intrp=1.0,
+    intrp=1,
     which=1,
     mask=0,
     mean=0,
@@ -299,9 +334,7 @@ def resample_spm(
             M = np.load(M)
             log.info("matrix M given in the form of NumPy file")
         else:
-            raise IOError(
-                errno.ENOENT, M, "Unrecognised file extension for the affine."
-            )
+            raise IOError(errno.ENOENT, M, "Unrecognised file extension for the affine.")
     elif isinstance(M, (np.ndarray, np.generic)):
         log.info("matrix M given in the form of Numpy array")
     else:
@@ -311,7 +344,14 @@ def resample_spm(
     import matlab as ml
 
     eng.amypad_resample(
-        imrefu, imflou, ml.double(M.tolist()), mask, mean, intrp, which, prefix
+        imrefu,
+        imflou,
+        ml.double(M.tolist()),
+        mask,
+        mean,
+        float(intrp),
+        which,
+        prefix,
     )
 
     # -compress the output
@@ -415,17 +455,32 @@ def seg_spm(
     return out
 
 
-def normw_spm(f_def, files4norm, matlab_eng_name="", outpath=None):
+def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name="", outpath=None):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
       f_def: NIfTI file of definitions for non-rigid normalisation
       files4norm: list of input NIfTI file paths in format ['file, 1']
+      voxsz: voxel size of the output (normalised) images
+      intrp: interpolation level used for the normalised images
+             (4: B-spline, default)
       matlab_eng_name: name of the Python engine for Matlab.
       outpath: output folder path for the normalisation files
     """
+
+    import matlab as ml
+
+    if bbox is None:
+        bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
+    elif isinstance(bbox, np.ndarray) and bbox.shape == (2, 3):
+        bb = ml.double(bbox.tolist())
+    elif isinstance(bbox, list) and len(bbox) == 2:
+        bb = ml.double(bbox)
+    else:
+        raise ValueError("unrecognised format for bounding box")
+
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm)
+    eng.amypad_normw(f_def, files4norm, float(voxsz), float(intrp), bb)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)

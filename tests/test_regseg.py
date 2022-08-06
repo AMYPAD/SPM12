@@ -22,7 +22,7 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
     if denan:
         x, y = map(np.nan_to_num, (x, y))
     if nmse_tol:
-        if ((x - y) ** 2).mean() / (y ** 2).mean() < nmse_tol:
+        if ((x - y) ** 2).mean() / (y**2).mean() < nmse_tol:
             return
     elif (x == y).all():
         return

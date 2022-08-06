@@ -1,11 +1,6 @@
 from miutil.mlab import matlabroot
 from pytest import mark, skip
 
-try:
-    FileNotFoundError
-except NameError:  # fix py2.7
-    FileNotFoundError = OSError
-
 pytestmark = mark.filterwarnings("ignore:numpy.ufunc size changed.*:RuntimeWarning")
 
 
