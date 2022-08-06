@@ -63,44 +63,43 @@ def smoothim(fim, fwhm=4, fout=""):
     )
     return {"im": imsmo, "fim": fout, "fwhm": fwhm, "affine": imd["affine"]}
 
-#---------------------------------------------------------------------
-def get_bbox(fnii):
-    ''' get the SPM equivalent of the bounding box for
-        NIfTI image `fnii` which can be a dictionary or file.
-    '''
 
+def get_bbox(fnii):
+    """get the SPM equivalent of the bounding box for
+    NIfTI image `fnii` which can be a dictionary or file.
+    """
 
     if isinstance(fnii, (str, PurePath)):
-        niidct = nii.getnii(fnii, output='all')
-    elif isinstance(fnii, dict) and 'hdr' in fnii:
+        niidct = nii.getnii(fnii, output="all")
+    elif isinstance(fnii, dict) and "hdr" in fnii:
         niidct = fnii
     else:
-        raise ValueError('incorrect input NIfTI file/dictionary')
+        raise ValueError("incorrect input NIfTI file/dictionary")
 
+    dim = niidct["hdr"]["dim"]
+    corners = np.array(
+        [
+            [1, 1, 1, 1],
+            [1, 1, dim[3], 1],
+            [1, dim[2], 1, 1],
+            [1, dim[2], dim[3], 1],
+            [dim[1], 1, 1, 1],
+            [dim[1], 1, dim[3], 1],
+            [dim[1], dim[2], 1, 1],
+            [dim[1], dim[2], dim[3], 1],
+        ]
+    )
 
-    dim = niidct['hdr']['dim']
-    corners = np.array([
-        [1,1,1,1],
-        [1,1,dim[3],1],
-        [1,dim[2],1,1],
-        [1,dim[2],dim[3],1],
-        [dim[1],1,1,1],
-        [dim[1],1,dim[3],1],
-        [dim[1],dim[2],1,1],
-        [dim[1],dim[2],dim[3],1],
-        ])
+    XYZ = np.dot(niidct["affine"][:3, :], corners.T)
 
-    XYZ = np.dot(niidct['affine'][:3,:], corners.T)
+    # FIXME: weird correction for SPM bounding box (??)
+    crr = np.dot(niidct["affine"][:3, :3], [1, 1, 1])
 
-    # > weird correction for SPM bounding box (??)
-    crr = np.dot(niidct['affine'][:3,:3],[1,1,1])
-
-    # > bounding box as matrix
-    bbox = np.concatenate((np.min(XYZ,axis=1)-crr, np.max(XYZ,axis=1)-crr))
-    bbox.shape = (2,3)
+    # bounding box as matrix
+    bbox = np.concatenate((np.min(XYZ, axis=1) - crr, np.max(XYZ, axis=1) - crr))
+    bbox.shape = (2, 3)
 
     return bbox
-#---------------------------------------------------------------------
 
 
 def coreg_spm(
@@ -458,13 +457,8 @@ def seg_spm(
 
 
 def normw_spm(
-    f_def,
-    files4norm,
-    voxsz=2.,
-    intrp=4.,
-    bbox=None,
-    matlab_eng_name="",
-    outpath=None):
+    f_def, files4norm, voxsz=2.0, intrp=4.0, bbox=None, matlab_eng_name="", outpath=None
+):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
@@ -478,14 +472,15 @@ def normw_spm(
     """
 
     import matlab as ml
+
     if bbox is None:
-        bb = ml.double([[np.NaN,np.NaN,np.NaN],[np.NaN,np.NaN,np.NaN]])
-    elif isinstance(bbox, np.ndarray) and bbox.shape==(2,3):
+        bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
+    elif isinstance(bbox, np.ndarray) and bbox.shape == (2, 3):
         bb = ml.double(bbox.tolist())
-    elif isinstance(bbox, list) and len(bbox)==2:
+    elif isinstance(bbox, list) and len(bbox) == 2:
         bb = ml.double(bbox)
     else:
-        raise ValueError('unrecognised format for bounding box')
+        raise ValueError("unrecognised format for bounding box")
 
     eng = ensure_spm(matlab_eng_name)  # get_matlab
     eng.amypad_normw(f_def, files4norm, voxsz, intrp, bb)
