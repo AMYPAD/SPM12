@@ -3,8 +3,8 @@ import logging
 import os
 import re
 import shutil
-from textwrap import dedent
 from pathlib import Path, PurePath
+from textwrap import dedent
 
 import numpy as np
 import scipy.ndimage as ndi
@@ -77,7 +77,7 @@ def get_bbox(fnii):
     else:
         raise ValueError('incorrect input NIfTI file/dictionary')
 
-    
+
     dim = niidct['hdr']['dim']
     corners = np.array([
         [1,1,1,1],
@@ -471,7 +471,7 @@ def normw_spm(
       f_def: NIfTI file of definitions for non-rigid normalisation
       files4norm: list of input NIfTI file paths in format ['file, 1']
       voxsz: voxel size of the output (normalised) images
-      intrp: interpolation level used for the normalised images 
+      intrp: interpolation level used for the normalised images
              (4: B-spline, default)
       matlab_eng_name: name of the Python engine for Matlab.
       outpath: output folder path for the normalisation files
