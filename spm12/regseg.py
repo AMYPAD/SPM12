@@ -284,7 +284,7 @@ def resample_spm(
     M,
     matlab_eng_name="",
     fwhm=0,
-    intrp=1.0,
+    intrp=1,
     which=1,
     mask=0,
     mean=0,
@@ -352,7 +352,14 @@ def resample_spm(
     import matlab as ml
 
     eng.amypad_resample(
-        imrefu, imflou, ml.double(M.tolist()), mask, mean, intrp, which, prefix
+        imrefu,
+        imflou,
+        ml.double(M.tolist()),
+        mask,
+        mean,
+        float(intrp),
+        which,
+        prefix,
     )
 
     # -compress the output
@@ -457,7 +464,7 @@ def seg_spm(
 
 
 def normw_spm(
-    f_def, files4norm, voxsz=2.0, intrp=4.0, bbox=None, matlab_eng_name="", outpath=None
+    f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name="", outpath=None
 ):
     """
     Write normalisation output to NIfTI files using SPM12.
@@ -483,7 +490,7 @@ def normw_spm(
         raise ValueError("unrecognised format for bounding box")
 
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm, voxsz, intrp, bb)
+    eng.amypad_normw(f_def, files4norm, float(voxsz), float(intrp), bb)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)
