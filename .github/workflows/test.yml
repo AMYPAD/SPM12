@@ -4,15 +4,12 @@ jobs:
   check:
     if: github.event_name != 'push' || github.ref != 'refs/heads/devel'
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python: [2.7, 3.6, 3.9]
-    name: Check py${{ matrix.python }}
+    name: Check
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
       with:
-        python-version: ${{ matrix.python }}
+        python-version: '3.x'
     - name: set PYSHA
       run: echo "PYSHA=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
     - uses: actions/cache@v1
@@ -35,14 +32,13 @@ jobs:
       env:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         EVENT: ${{ github.event_name }}
-    - if: startsWith(matrix.python, '3')
-      run: pre-commit run -a --show-diff-on-failure
+    - run: pre-commit run -a --show-diff-on-failure
   test:
     if: github.event_name != 'pull_request' || github.head_ref != 'devel'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [2.7, 3.6, 3.9]
+        python: [3.6, '3.10']
     name: Test py${{ matrix.python }}
     steps:
     - uses: actions/checkout@v2

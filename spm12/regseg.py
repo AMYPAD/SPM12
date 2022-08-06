@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import shutil
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from textwrap import dedent
 
 import numpy as np
