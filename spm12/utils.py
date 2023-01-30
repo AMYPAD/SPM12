@@ -71,4 +71,10 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
                 """
                 )
             )
+    found = eng.which("spm_jobman")
+    if path.realpath(path.dirname(found)) != path.realpath(addpath):
+        log.warning(
+            f"Internal ({addpath}) does not match detected ({found}) SPM12.\n"
+            "This means `spm_dir()` is likely to fail - use `spm_dir_eng()` instead."
+        )
     return eng
