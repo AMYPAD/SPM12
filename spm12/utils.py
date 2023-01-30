@@ -22,10 +22,21 @@ def get_matlab(name=None):
 
 
 def spm_dir(cache="~/.spm12", version=12):
+    """Internal SPM12 directory"""
     cache = path.expanduser(cache)
     if str(version) != "12":
         raise NotImplementedError
     return path.join(cache, "spm12")
+
+
+def spm_dir_eng(name=None, cache="~/.spm12", version=12):
+    """
+    Computed SPM12 directory.
+    Uses matlab to find SPM12 directly,
+    so may prefer user-installed version to the internal `spm_dir`.
+    """
+    eng = ensure_spm(name=name, cache=cache, version=version)
+    return path.dirname(eng.which("spm_jobman"))
 
 
 @lru_cache()
