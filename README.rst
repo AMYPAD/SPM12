@@ -30,9 +30,8 @@ Contributing
 
 See `CONTRIBUTING.md <https://github.com/AMYPAD/SPM12/blob/master/CONTRIBUTING.md>`_.
 
-
 .. |PET-MR Coregistration| image:: https://raw.githubusercontent.com/AMYPAD/images/master/spm12/pet_mr_coreg.png
-.. |Tests| image:: https://img.shields.io/github/workflow/status/AMYPAD/SPM12/Test?logo=GitHub
+.. |Tests| image:: https://img.shields.io/github/actions/workflow/status/AMYPAD/SPM12/test.yml?branch=master&logo=GitHub
    :target: https://github.com/AMYPAD/SPM12/actions
 .. |Coverage| image:: https://codecov.io/gh/AMYPAD/SPM12/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/AMYPAD/SPM12
