@@ -8,7 +8,7 @@ from miutil.mlab import get_engine
 from miutil.web import urlopen_cached
 from pkg_resources import resource_filename
 
-__all__ = ["ensure_spm", "get_matlab", "spm_dir"]
+__all__ = ["ensure_spm", "get_matlab", "spm_dir", "spm_dir_eng"]
 PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
