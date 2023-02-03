@@ -1,5 +1,5 @@
 import logging
-from functools import lru_cache, wraps
+from functools import wraps
 from os import path
 from textwrap import dedent
 
@@ -13,7 +13,6 @@ PATH_M = resource_filename(__name__, "")
 log = logging.getLogger(__name__)
 
 
-@lru_cache()
 def get_matlab(name=None):
     eng = get_engine(name=name)
     log.debug("adding wrappers (%s) to MATLAB path", PATH_M)
@@ -39,7 +38,6 @@ def spm_dir_eng(name=None, cache="~/.spm12", version=12):
     return path.dirname(eng.which("spm_jobman"))
 
 
-@lru_cache()
 @wraps(get_matlab)
 def ensure_spm(name=None, cache="~/.spm12", version=12):
     eng = get_matlab(name)
