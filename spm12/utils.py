@@ -1,15 +1,19 @@
 import logging
 from functools import lru_cache, wraps
-from os import path
+from os import fspath, path
 from textwrap import dedent
 
 from miutil.fdio import extractall
 from miutil.mlab import get_engine
 from miutil.web import urlopen_cached
-from pkg_resources import resource_filename
+
+try:  # py<3.9
+    import importlib_resources as resources
+except ImportError:
+    from importlib import resources
 
 __all__ = ["ensure_spm", "get_matlab", "spm_dir", "spm_dir_eng"]
-PATH_M = resource_filename(__name__, "")
+PATH_M = fspath(resources.files("spm12").resolve())
 log = logging.getLogger(__name__)
 
 
