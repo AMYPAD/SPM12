@@ -1,5 +1,5 @@
 import logging
-from functools import wraps
+from functools import lru_cache, wraps
 from os import path
 from textwrap import dedent
 
@@ -38,6 +38,7 @@ def spm_dir_eng(name=None, cache="~/.spm12", version=12):
     return path.dirname(eng.which("spm_jobman"))
 
 
+@lru_cache()
 @wraps(get_matlab)
 def ensure_spm(name=None, cache="~/.spm12", version=12):
     eng = get_matlab(name)
