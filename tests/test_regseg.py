@@ -28,20 +28,10 @@ def assert_equal_arrays(x, y, nmse_tol=0, denan=True):
         return
     raise ValueError(
         dedent(
-            """\
-        Unequal arrays:x != y. min/mean/max(std):
-        x: {:.3g}/{:.3g}/{:.3g}({:.3g})
-        y: {:.3g}/{:.3g}/{:.3g}({:.3g})
+            f"""        Unequal arrays:x != y. min/mean/max(std):
+        x: {x.min():.3g}/{x.mean():.3g}/{x.max():.3g}({x.std():.3g})
+        y: {y.min():.3g}/{y.mean():.3g}/{y.max():.3g}({y.std():.3g})
         """
-        ).format(
-            x.min(),
-            x.mean(),
-            x.max(),
-            x.std(),
-            y.min(),
-            y.mean(),
-            y.max(),
-            y.std(),
         )
     )
 

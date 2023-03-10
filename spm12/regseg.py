@@ -47,7 +47,7 @@ def smoothim(fim, fwhm=4, fout=""):
     )
     if not fout:
         f = nii.file_parts(fim)
-        fout = os.path.join(f[0], "{}_smo{}{}".format(f[1], str(fwhm).replace(".", "-"), f[2]))
+        fout = os.path.join(f[0], f"{f[1]}_smo{str(fwhm).replace('.', '-')}{f[2]}")
     nii.array2nii(
         imsmo,
         imd["affine"],
@@ -173,10 +173,7 @@ def coreg_spm(
         # delete the previous version (non-smoothed)
         os.remove(imrefu)
         imrefu = smodct["fim"]
-
-        log.info(
-            "smoothed the reference image with FWHM={} and saved to\n{}".format(fwhm_ref, imrefu)
-        )
+        log.info("smoothed the reference image with FWHM=%r and saved to\n%r", fwhm_ref, imrefu)
 
     # floating
     if hasext(imflo, "gz"):
@@ -197,9 +194,7 @@ def coreg_spm(
 
         imflou = smodct["fim"]
 
-        log.info(
-            "smoothed the floating image with FWHM={} and saved to\n{}".format(fwhm_flo, imflou)
-        )
+        log.info("smoothed the floating image with FWHM=%r and saved to\n%r", fwhm_flo, imflou)
 
     # run the MATLAB SPM registration
     import matlab as ml
@@ -296,10 +291,12 @@ def resample_spm(
             """\
         ======================================================================
          S P M  inputs:
-         > ref:' {}
-         > flo:' {}
+         > ref:' %r
+         > flo:' %r
         ======================================================================"""
-        ).format(imref, imflo)
+        ),
+        imref,
+        imflo,
     )
     eng = ensure_spm(matlab_eng_name)  # get_matlab
 
@@ -385,11 +382,7 @@ def resample_spm(
 
     if fwhm > 0:
         smodct = smoothim(fout, fwhm)
-        log.info(
-            "smoothed the resampled image with FWHM={} and saved to\n{}".format(
-                fwhm, smodct["fim"]
-            )
-        )
+        log.info("smoothed the resampled image with FWHM=%r and saved to\n%r", fwhm, smodct["fim"])
 
     return fout
 
