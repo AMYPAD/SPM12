@@ -472,6 +472,23 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
     else:
         raise ValueError("unrecognised format for bounding box")
 
+
+    if isinstance(voxsz, (float, int, np.float32, np.float64, np.int32)):
+        voxsz = ml.double( [voxsz,voxsz,voxsz] )
+    elif isinstance(voxsz, np.ndarray):
+        if voxsz.size!=3:
+            raise ValueError('incorrect vector size for voxel size <voxsz>')
+        else:
+            voxsz = ml.double(list(voxsz))
+    elif isinstance(voxsz, list):
+        if len(voxsz)!=3:
+            raise ValueError('incorrect list size for voxel size <voxsz>')
+        else:
+            voxsz = ml.double(voxsz)
+    else:
+        raise ValueError('unrecognised voxel size <voxsz>')
+
+    
     eng = ensure_spm(matlab_eng_name)  # get_matlab
     eng.amypad_normw(f_def, files4norm, float(voxsz), float(intrp), bb)
     out = []  # output list
