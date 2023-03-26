@@ -490,7 +490,7 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
 
     
     eng = ensure_spm(matlab_eng_name)  # get_matlab
-    eng.amypad_normw(f_def, files4norm, float(voxsz), float(intrp), bb)
+    eng.amypad_normw(f_def, files4norm, voxsz, float(intrp), bb)
     out = []  # output list
     if outpath is not None:
         create_dir(outpath)
