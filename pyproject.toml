@@ -5,7 +5,3 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "spm12/_dist_ver.py"
 write_to_template = "__version__ = '{version}'\n"
-
-[tool.black]
-target_version = ["py37", "py311"]
-line_length = 99
