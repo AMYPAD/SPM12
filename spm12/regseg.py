@@ -35,7 +35,7 @@ def glob_match(pttrn, pth):
 
 
 def fwhm2sig(fwhm, voxsize=2.0):
-    return fwhm / (voxsize * (8 * np.log(2)) ** 0.5)
+    return fwhm / (voxsize * (8 * np.log(2))**0.5)
 
 
 def smoothim(fim, fwhm=4, fout=""):
@@ -43,9 +43,8 @@ def smoothim(fim, fwhm=4, fout=""):
     Smooth image using Gaussian filter with FWHM given as an option.
     """
     imd = nii.getnii(fim, output="all")
-    imsmo = ndi.filters.gaussian_filter(
-        imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]), mode="constant"
-    )
+    imsmo = ndi.filters.gaussian_filter(imd["im"], fwhm2sig(fwhm, voxsize=imd["voxsize"]),
+                                        mode="constant")
     if not fout:
         f = nii.file_parts(fim)
         fout = os.path.join(f[0], f"{f[1]}_smo{str(fwhm).replace('.', '-')}{f[2]}")
@@ -76,18 +75,9 @@ def get_bbox(fnii):
         raise ValueError("incorrect input NIfTI file/dictionary")
 
     dim = niidct["hdr"]["dim"]
-    corners = np.array(
-        [
-            [1, 1, 1, 1],
-            [1, 1, dim[3], 1],
-            [1, dim[2], 1, 1],
-            [1, dim[2], dim[3], 1],
-            [dim[1], 1, 1, 1],
-            [dim[1], 1, dim[3], 1],
-            [dim[1], dim[2], 1, 1],
-            [dim[1], dim[2], dim[3], 1],
-        ]
-    )
+    corners = np.array([[1, 1, 1, 1], [1, 1, dim[3], 1], [1, dim[2], 1, 1], [1, dim[2], dim[3], 1],
+                        [dim[1], 1, 1, 1], [dim[1], 1, dim[3], 1], [dim[1], dim[2], 1, 1],
+                        [dim[1], dim[2], dim[3], 1]])
 
     XYZ = np.dot(niidct["affine"][:3, :], corners.T)
 
@@ -135,23 +125,14 @@ def coreg_spm(
     """
     out = {}  # output dictionary
     sep = sep or [4, 2]
+
     tol = tol or [
-        0.0200,
-        0.0200,
-        0.0200,
-        0.0010,
-        0.0010,
-        0.0010,
-        0.0100,
-        0.0100,
-        0.0100,
-        0.0010,
-        0.0010,
-        0.0010,
-    ]
+        0.0200, 0.0200, 0.0200, 0.0010, 0.0010, 0.0010, 0.0100, 0.0100, 0.0100, 0.0010, 0.0010,
+        0.0010]
+
     fwhm = fwhm or [7, 7]
     params = params or [0, 0, 0, 0, 0, 0]
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+    eng = ensure_spm(matlab_eng_name) # get_matlab
 
     if not outpath and fname_aff and "/" in fname_aff:
         opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
@@ -288,18 +269,16 @@ def resample_spm(
     del_out_uncmpr=False,
 ):
     log.debug(
-        dedent(
-            """\
+        dedent("""\
         ======================================================================
          S P M  inputs:
          > ref:' %r
          > flo:' %r
-        ======================================================================"""
-        ),
+        ======================================================================"""),
         imref,
         imflo,
     )
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+    eng = ensure_spm(matlab_eng_name) # get_matlab
 
     if not outpath and fimout:
         opth = os.path.dirname(fimout) or os.path.dirname(imflo)
@@ -412,11 +391,11 @@ def seg_spm(
       sotre_fwd/inv: stores forward/inverse normalisation definitions
       visual: shows the Matlab window progress
     """
-    out = {}  # output dictionary
-    # get Matlab engine or use the provided one
-    eng = ensure_spm(matlab_eng_name)
+    out = {}                          # output dictionary
+    eng = ensure_spm(matlab_eng_name) # get Matlab engine or use the provided one
     if not spm_path:
         spm_path = spm_dir()
+
     # run SPM normalisation/segmentation
     param, invdef, fordef = eng.amypad_seg(
         f_mri,
@@ -434,7 +413,8 @@ def seg_spm(
         out["param"] = move_files(param, outpath)
         out["invdef"] = move_files(invdef, outpath)
         out["fordef"] = move_files(fordef, outpath)
-        # go through tissue types and move them to the output folder
+
+        # move each tissue type to the output folder
         for c in glob_match(r"c\d*", os.path.dirname(param)):
             nm = os.path.basename(c)[:2]
             out[nm] = move_files(c, outpath)
@@ -474,7 +454,7 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
         raise ValueError("unrecognised format for bounding box")
 
     if isinstance(voxsz, Number):
-        voxsz = ml.double([voxsz]*3)
+        voxsz = ml.double([voxsz] * 3)
     elif isinstance(voxsz, (np.ndarray, list)):
         if len(voxsz) != 3:
             raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
@@ -482,10 +462,10 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
     else:
         raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
 
-
-    eng = ensure_spm(matlab_eng_name)  # get_matlab
+    eng = ensure_spm(matlab_eng_name) # get_matlab
     eng.amypad_normw(f_def, files4norm, voxsz, float(intrp), bb)
-    out = []  # output list
+    out = []                          # output list
+
     if outpath is not None:
         create_dir(outpath)
         for f in files4norm:
@@ -494,8 +474,7 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
                 move_files(
                     os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
                     outpath,
-                )
-            )
+                ))
     else:
         out.append("w" + os.path.basename(f.split(",")[0]))
     return out
