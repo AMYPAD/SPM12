@@ -200,11 +200,14 @@ def coreg_spm(
         out["freg"] = imflou_
 
     # get the affine matrix
-    M = np.array(Mm._data.tolist())
-    M = M.reshape(4, 4).T
+    M = np.array(Mm.tomemoryview().tolist())
+    
+    # # OLD WAY:
+    # M = np.array(Mm._data.tolist())
+    # M = M.reshape(4, 4).T
 
     # get the translation and rotation parameters in a vector
-    x = np.array(xm._data.tolist())
+    x = np.array(xm.tomemoryview().tolist())
 
     # delete the uncompressed files
     if del_uncmpr:
