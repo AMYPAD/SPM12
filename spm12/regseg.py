@@ -91,6 +91,12 @@ def get_bbox(fnii):
     return bbox
 
 
+def mat2array(matlab_mat):
+    if hasattr(matlab_mat, '_data'): # matlab<R2022a
+        return np.array(matlab_mat._data).reshape(matlab_mat.size, order='F')
+    return np.array(matlab_mat)
+
+
 def coreg_spm(
     imref,
     imflo,
@@ -200,14 +206,10 @@ def coreg_spm(
         out["freg"] = imflou_
 
     # get the affine matrix
-    M = np.array(Mm.tomemoryview().tolist())
-    
-    # # OLD WAY:
-    # M = np.array(Mm._data.tolist())
-    # M = M.reshape(4, 4).T
+    M = mat2array(Mm)
 
     # get the translation and rotation parameters in a vector
-    x = np.array(xm.tomemoryview().tolist())
+    x = mat2array(xm)
 
     # delete the uncompressed files
     if del_uncmpr:
