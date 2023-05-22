@@ -463,7 +463,7 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
     elif isinstance(voxsz, (np.ndarray, list)):
         if len(voxsz) != 3:
             raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
-        voxsz = ml.double(list(voxsz))
+        voxsz = ml.double(np.float64(voxsz))
     else:
         raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
 
