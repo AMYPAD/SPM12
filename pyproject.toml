@@ -47,7 +47,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Software Development :: Libraries",
     "Topic :: System :: Installation/Setup"]
-dependencies = ['importlib_resources; python_version < "3.9"', "argopt", "miutil[nii,web]>=0.7.2", "numpy", "scipy"]
+dependencies = ['importlib_resources; python_version < "3.9"', "argopt", "miutil[nii,web]>=0.12.0", "numpy", "scipy"]
 
 [project.optional-dependencies]
 dev = ["pytest>=6", "pytest-cov", "pytest-timeout", "pytest-xdist"]
