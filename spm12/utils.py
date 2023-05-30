@@ -1,19 +1,22 @@
 import logging
 from functools import lru_cache, wraps
-from os import path
+from os import fspath, path
 from textwrap import dedent
 
 from miutil.fdio import extractall
 from miutil.mlab import get_engine
 from miutil.web import urlopen_cached
-from pkg_resources import resource_filename
+
+try:          # py<3.9
+    import importlib_resources as resources
+except ImportError:
+    from importlib import resources
 
 __all__ = ["ensure_spm", "get_matlab", "spm_dir", "spm_dir_eng"]
-PATH_M = resource_filename(__name__, "")
+PATH_M = fspath(resources.files("spm12").resolve())
 log = logging.getLogger(__name__)
 
 
-@lru_cache()
 def get_matlab(name=None):
     eng = get_engine(name=name)
     log.debug("adding wrappers (%s) to MATLAB path", PATH_M)
@@ -52,29 +55,25 @@ def ensure_spm(name=None, cache="~/.spm12", version=12):
         try:
             log.info("Downloading to %s", cache)
             with urlopen_cached(
-                "https://www.fil.ion.ucl.ac.uk/spm/download/restricted/eldorado/spm12.zip",
-                cache,
+                    "https://www.fil.ion.ucl.ac.uk/spm/download/restricted/eldorado/spm12.zip",
+                    cache,
             ) as fd:
                 extractall(fd, cache)
             eng.addpath(addpath)
             if not eng.exist("spm_jobman"):
                 raise RuntimeError("MATLAB could not find SPM.")
             log.info("Installed")
-        except:  # NOQA: E722,B001
+        except:                # NOQA: E722,B001
             raise ImportError(
-                dedent(
-                    """\
+                dedent("""\
                 MATLAB could not find SPM.
                 Please follow installation instructions at
                 https://en.wikibooks.org/wiki/SPM/Download
                 Make sure to add SPM to MATLAB's path using `startup.m`
-                """
-                )
-            )
+                """))
+
     found = eng.which("spm_jobman")
     if path.realpath(path.dirname(found)) != path.realpath(addpath):
-        log.warning(
-            f"Internal ({addpath}) does not match detected ({found}) SPM12.\n"
-            "This means `spm_dir()` is likely to fail - use `spm_dir_eng()` instead."
-        )
+        log.warning(f"Internal ({addpath}) does not match detected ({found}) SPM12.\n"
+                    "This means `spm_dir()` is likely to fail - use `spm_dir_eng()` instead.")
     return eng

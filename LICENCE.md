@@ -1,4 +1,4 @@
-Copyright 2020 AMYPAD
+Copyright 2020-23 AMYPAD
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this project except in compliance with the License.
