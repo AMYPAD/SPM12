@@ -96,4 +96,4 @@ jobs:
         tag="${GITHUB_REF#refs/tags/}"
         gh release create --title "spm12 $tag beta" --draft --notes "$changelog" "$tag" dist/${{ steps.dist.outputs.whl }} dist/${{ steps.dist.outputs.whl_asc }}
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
