@@ -39,7 +39,10 @@ def standalone_coreg(
     '''
 
     if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.')
+        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
+        response = input('Do you want to install MATLAB Runtime? [y/n]')
+        if response in ['y', 'Y', 'yes']:
+            spm12.install_standalone()
     else:
         fspm = spm12.standalone_path()
 
@@ -119,7 +122,10 @@ def standalone_seg(
 
 
     if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.')
+        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
+        response = input('Do you want to install MATLAB Runtime? [y/n]')
+        if response in ['y', 'Y', 'yes']:
+            spm12.install_standalone()
     else:
         fspm = spm12.standalone_path()
 
@@ -259,7 +265,10 @@ def standalone_normw(
     '''
 
     if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.')
+        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
+        response = input('Do you want to install MATLAB Runtime? [y/n]')
+        if response in ['y', 'Y', 'yes']:
+            spm12.install_standalone()
     else:
         fspm = spm12.standalone_path()
 
