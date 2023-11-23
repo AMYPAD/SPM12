@@ -1,3 +1,5 @@
+__author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
+
 import errno
 import logging
 import os
@@ -13,8 +15,9 @@ from miutil import create_dir, hasext
 from miutil.imio import nii
 
 from .utils import ensure_spm, spm_dir
+from .standalone import standalone_coreg, standalone_seg, standalone_normw
 
-__author__ = ("Pawel J. Markiewicz", "Casper O. da Costa-Luis")
+
 log = logging.getLogger(__name__)
 
 
@@ -96,7 +99,7 @@ def mat2array(matlab_mat):
         return np.array(matlab_mat._data).reshape(matlab_mat.size, order='F')
     return np.array(matlab_mat)
 
-
+#====================================================================
 def coreg_spm(
     imref,
     imflo,
@@ -119,15 +122,19 @@ def coreg_spm(
     save_arr=True,
     save_txt=True,
     modify_nii=False,
+    standalone=False,
 ):
-    """Rigid body registration using SPM coreg function.
-    Args:
+    """Rigid body registration using SPM `coreg` function.
+    Arguments:
       imref: reference image
       imflo: floating image
       fwhm_ref: FWHM of the smoothing kernel for the reference image
       fwhm_flo: FWHM of the smoothing kernel for the reference image
       modify_nii: modifies the affine of the NIfTI file of the floating
         image according to the rigid body transformation.
+      standalone: if True, uses the standalone SPM12 with MATLAB Runtime;
+                  if it is not installed it will attempt installing the 
+                  MATLAB Runtime and SPM12 standalone.
     """
     out = {}  # output dictionary
     sep = sep or [4, 2]
@@ -138,7 +145,9 @@ def coreg_spm(
 
     fwhm = fwhm or [7, 7]
     params = params or [0, 0, 0, 0, 0, 0]
-    eng = ensure_spm(matlab_eng_name) # get_matlab
+
+    if standalone:
+        modify_nii = True
 
     if not outpath and fname_aff and "/" in fname_aff:
         opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
@@ -184,74 +193,101 @@ def coreg_spm(
 
         log.info("smoothed the floating image with FWHM=%r and saved to\n%r", fwhm_flo, imflou)
 
-    # run the MATLAB SPM registration
-    import matlab as ml
+    if not standalone:
+        # > ensure MATLAB and SPM
+        eng = ensure_spm(matlab_eng_name) # get_matlab
+        import matlab as ml
 
-    Mm, xm = eng.amypad_coreg(
-        imrefu,
-        imflou,
-        costfun,
-        ml.double(sep),
-        ml.double(tol),
-        ml.double(fwhm),
-        ml.double(params),
-        graphics,
-        visual,
-        nargout=2,
-    )
+        # > run registration using standard MATLAB
+        Mm, xm = eng.amypad_coreg(
+            imrefu,
+            imflou,
+            costfun,
+            ml.double(sep),
+            ml.double(tol),
+            ml.double(fwhm),
+            ml.double(params),
+            graphics,
+            visual,
+            nargout=2,
+        )
 
-    # modify the affine of the floating image (as usually done in SPM)
-    if modify_nii:
-        eng.amypad_coreg_modify_affine(imflou_, Mm)
-        out["freg"] = imflou_
+        # modify the affine of the floating image (as usually done in SPM)
+        if modify_nii:
+            eng.amypad_coreg_modify_affine(imflou_, Mm)
+            out["freg"] = imflou_
 
-    # get the affine matrix
-    M = mat2array(Mm)
+        # get the affine matrix
+        M = mat2array(Mm)
 
-    # get the translation and rotation parameters in a vector
-    x = mat2array(xm)
+        # get the translation and rotation parameters in a vector
+        x = mat2array(xm)
 
-    # delete the uncompressed files
+        #----------------------------------------
+        # > save affine
+        create_dir(os.path.join(opth, "affine-spm"))
+
+        if fname_aff == "":
+            if pickname == "ref":
+                faff = os.path.join(
+                    opth,
+                    "affine-spm",
+                    "affine-ref-" + nii.file_parts(imref)[1] + fcomment + ".npy",
+                )
+            else:
+                faff = os.path.join(
+                    opth,
+                    "affine-spm",
+                    "affine-flo-" + nii.file_parts(imflo)[1] + fcomment + ".npy",
+                )
+        else:
+            # add '.npy' extension if not in the affine output file name
+            if not fname_aff.endswith(".npy"):
+                fname_aff += ".npy"
+            faff = os.path.join(opth, "affine-spm", fname_aff)
+        
+
+        # > save the affine transformation
+        if save_arr:
+            np.save(faff, M)
+        if save_txt:
+            faff = os.path.splitext(faff)[0] + ".txt"
+            np.savetxt(faff, M)
+        #----------------------------------------
+
+        out["affine"] = M
+        out["faff"] = faff
+        out["rotations"] = x[3:]
+        out["translations"] = x[:3]
+        if output_eng:
+            out["matlab_eng"] = eng
+
+    else:
+        # > Standalone SPM12
+        if modify_nii:
+            foth = imflou_
+        else:
+            foth = None
+
+        out['fbatch'] = standalone_coreg(
+            imrefu,
+            imflou,
+            foth,
+            cost_fun=costfun,
+            sep=sep,
+            tol=tol,
+            fwhm=fwhm)
+
+        out['freg'] = imflou_
+    
+
+    # > delete the uncompressed files
     if del_uncmpr:
         os.remove(imrefu)
         os.remove(imflou)
 
-    create_dir(os.path.join(opth, "affine-spm"))
-
-    if fname_aff == "":
-        if pickname == "ref":
-            faff = os.path.join(
-                opth,
-                "affine-spm",
-                "affine-ref-" + nii.file_parts(imref)[1] + fcomment + ".npy",
-            )
-        else:
-            faff = os.path.join(
-                opth,
-                "affine-spm",
-                "affine-flo-" + nii.file_parts(imflo)[1] + fcomment + ".npy",
-            )
-    else:
-        # add '.npy' extension if not in the affine output file name
-        if not fname_aff.endswith(".npy"):
-            fname_aff += ".npy"
-
-        faff = os.path.join(opth, "affine-spm", fname_aff)
-
-    # save the affine transformation
-    if save_arr:
-        np.save(faff, M)
-    if save_txt:
-        faff = os.path.splitext(faff)[0] + ".txt"
-        np.savetxt(faff, M)
-
-    out["affine"] = M
-    out["faff"] = faff
-    out["rotations"] = x[3:]
-    out["translations"] = x[:3]
-    if output_eng:
-        out["matlab_eng"] = eng
     return out
+#====================================================================
 
 
 def resample_spm(
@@ -372,6 +408,7 @@ def resample_spm(
     return fout
 
 
+#====================================================================
 def seg_spm(
     f_mri,
     spm_path=None,
@@ -380,9 +417,11 @@ def seg_spm(
     store_nat_gm=False,
     store_nat_wm=False,
     store_nat_csf=False,
+    store_nat_bon=False,
     store_fwd=False,
     store_inv=False,
     visual=False,
+    standalone=False,
 ):
     """
     Normalisation/segmentation using SPM12.
@@ -401,40 +440,76 @@ def seg_spm(
     if not spm_path:
         spm_path = spm_dir()
 
-    # run SPM normalisation/segmentation
-    param, invdef, fordef = eng.amypad_seg(
-        f_mri,
-        str(spm_path),
-        float(store_nat_gm),
-        float(store_nat_wm),
-        float(store_nat_csf),
-        float(store_fwd),
-        float(store_inv),
-        float(visual),
-        nargout=3,
-    )
-    if outpath is not None:
-        create_dir(outpath)
-        out["param"] = move_files(param, outpath)
-        out["invdef"] = move_files(invdef, outpath)
-        out["fordef"] = move_files(fordef, outpath)
 
-        # move each tissue type to the output folder
-        for c in glob_match(r"c\d*", os.path.dirname(param)):
-            nm = os.path.basename(c)[:2]
-            out[nm] = move_files(c, outpath)
+    if not standalone:
+        # > run SPM normalisation/segmentation using standard MATLAB
+        param, invdef, fordef = eng.amypad_seg(
+            f_mri,
+            str(spm_path),
+            float(store_nat_gm),
+            float(store_nat_wm),
+            float(store_nat_csf),
+            float(store_fwd),
+            float(store_inv),
+            float(visual),
+            nargout=3,
+        )
+
+        if outpath is not None:
+            create_dir(outpath)
+            out["param"] = move_files(param, outpath)
+            out["invdef"] = move_files(invdef, outpath)
+            out["fordef"] = move_files(fordef, outpath)
+
+            # move each tissue type to the output folder
+            for c in glob_match(r"c\d*", os.path.dirname(param)):
+                nm = os.path.basename(c)[:2]
+                out[nm] = move_files(c, outpath)
+        else:
+            out["param"] = param
+            out["invdef"] = invdef
+            out["fordef"] = fordef
+
+            for c in glob_match(r"c\d*", os.path.dirname(param)):
+                nm = os.path.basename(c)[:2]
+                out[nm] = c
+
     else:
-        out["param"] = param
-        out["invdef"] = invdef
-        out["fordef"] = fordef
+        # > run standalone SPM12 using MATLAB Runtime (no license needed)
+        out = standalone_seg(
+            f_mri,
+            outpath=outpath,
+            nat_gm=store_nat_gm,
+            nat_wm=store_nat_wm,
+            nat_csf=store_nat_csf,
+            nat_bn=store_nat_bon,
+            biasreg=0.001,
+            biasfwhm=60,
+            mrf_cleanup=1,
+            cleanup=1,
+            regulariser=[0, 0.001, 0.5, 0.05, 0.2],
+            affinereg='mni',
+            fwhm=0,
+            sampling=3,
+            store_fwd=store_fwd,
+            store_inv=store_inv)
 
-        for c in glob_match(r"c\d*", os.path.dirname(param)):
-            nm = os.path.basename(c)[:2]
-            out[nm] = c
+    
     return out
+#====================================================================
 
 
-def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name="", outpath=None):
+#====================================================================
+def normw_spm(
+    f_def,
+    files4norm,
+    outpath=None,
+    voxsz=2,
+    intrp=4,
+    bbox=None,
+    matlab_eng_name="",
+    standalone=False):
+
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
@@ -447,39 +522,56 @@ def normw_spm(f_def, files4norm, voxsz=2, intrp=4, bbox=None, matlab_eng_name=""
       outpath: output folder path for the normalisation files
     """
 
-    import matlab as ml
+    if not standalone:
+        import matlab as ml
 
-    if bbox is None:
-        bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
-    elif isinstance(bbox, np.ndarray) and bbox.shape == (2, 3):
-        bb = ml.double(bbox.tolist())
-    elif isinstance(bbox, list) and len(bbox) == 2:
-        bb = ml.double(bbox)
-    else:
-        raise ValueError("unrecognised format for bounding box")
+        list4norm = [f+',1' for f in files4norm]  
 
-    if isinstance(voxsz, Number):
-        voxsz = ml.double([voxsz] * 3)
-    elif isinstance(voxsz, (np.ndarray, list)):
-        if len(voxsz) != 3:
+        if bbox is None:
+            bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
+        elif isinstance(bbox, np.ndarray) and bbox.shape == (2, 3):
+            bb = ml.double(bbox.tolist())
+        elif isinstance(bbox, list) and len(bbox) == 2:
+            bb = ml.double(bbox)
+        else:
+            raise ValueError("unrecognised format for bounding box")
+
+        if isinstance(voxsz, Number):
+            voxsz = ml.double([voxsz] * 3)
+        elif isinstance(voxsz, (np.ndarray, list)):
+            if len(voxsz) != 3:
+                raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
+            voxsz = ml.double(np.float64(voxsz))
+        else:
             raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
-        voxsz = ml.double(np.float64(voxsz))
-    else:
-        raise ValueError(f"voxel size ({voxsz}) should be scalar or 3-vector")
 
-    eng = ensure_spm(matlab_eng_name) # get_matlab
-    eng.amypad_normw(f_def, files4norm, voxsz, float(intrp), bb)
-    out = []                          # output list
+        eng = ensure_spm(matlab_eng_name) # get_matlab
+        eng.amypad_normw(f_def, list4norm, voxsz, float(intrp), bb)
+        out = []                          # output list
 
-    if outpath is not None:
-        create_dir(outpath)
-        for f in files4norm:
-            fpth = f.split(",")[0]
-            out.append(
-                move_files(
-                    os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
-                    outpath,
-                ))
+        if outpath is not None:
+            create_dir(outpath)
+            for f in files4norm:
+                fpth = f #.split(",")[0]
+                out.append(
+                    move_files(
+                        os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
+                        outpath,
+                    ))
+        else:
+            out.append("w" + os.path.basename(f.split(",")[0]))
+
+    # > Standalone SPM12
     else:
-        out.append("w" + os.path.basename(f.split(",")[0]))
+
+        out = standalone_normw(
+            f_def,
+            files4norm,
+            bbox=bbox,
+            voxsz=voxsz,
+            intrp=intrp,
+            prfx='w',
+            outpath=outpath)
+
     return out
+#====================================================================
