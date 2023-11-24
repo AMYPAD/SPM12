@@ -16,6 +16,7 @@ from miutil.imio import nii
 
 from .utils import ensure_spm, spm_dir
 from .standalone import standalone_coreg, standalone_seg, standalone_normw
+from .setup_rt import ensure_standalone
 
 
 log = logging.getLogger(__name__)
@@ -148,6 +149,7 @@ def coreg_spm(
 
     if standalone:
         modify_nii = True
+        ensure_standalone()
 
     if not outpath and fname_aff and "/" in fname_aff:
         opth = os.path.dirname(fname_aff) or os.path.dirname(imflo)
@@ -290,6 +292,7 @@ def coreg_spm(
 #====================================================================
 
 
+#====================================================================
 def resample_spm(
     imref,
     imflo,
@@ -308,6 +311,7 @@ def resample_spm(
     del_ref_uncmpr=False,
     del_flo_uncmpr=False,
     del_out_uncmpr=False,
+    standalone=False
 ):
     log.debug(
         dedent("""\
@@ -358,6 +362,7 @@ def resample_spm(
     else:
         raise ValueError("unrecognised affine matrix format")
 
+    #--------------------------------------------
     # run the Matlab SPM resampling
     import matlab as ml
 
@@ -371,6 +376,7 @@ def resample_spm(
         which,
         prefix,
     )
+    #--------------------------------------------
 
     # -compress the output
     split = os.path.split(imflou)

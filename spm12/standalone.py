@@ -38,13 +38,9 @@ def standalone_coreg(
         fflo:   file path to the floating image (uncompressed NIfTI)
     '''
 
-    if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
-        response = input('Do you want to install MATLAB Runtime? [y/n]')
-        if response in ['y', 'Y', 'yes']:
-            spm12.install_standalone()
-    else:
-        fspm = spm12.standalone_path()
+
+    spm12.ensure_standalone()
+    fspm = spm12.standalone_path()
 
 
     # > reference and floating images

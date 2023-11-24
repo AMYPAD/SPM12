@@ -128,6 +128,21 @@ def check_standalone():
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
+
+#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+def ensure_standalone():
+    ''' Check if the standalone SPM12 is already installed
+        with the correct MATLAB Runtime
+    '''
+
+    if not check_standalone():
+        log.warning('MATLAB Runtime for SPM12 is not yet installed on your machine')
+        response = input('Do you want to install MATLAB Runtime? [y/n]')
+        if response in ['y', 'Y', 'yes']:
+            install_standalone()
+#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def get_file(url, save_path):
     response = requests.get(url)
