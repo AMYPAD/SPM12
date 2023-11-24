@@ -10,7 +10,7 @@ import os
 from pathlib import Path, PurePath
 import subprocess
 
-from niftypet import nimpa
+from miutil import create_dir
 import spm12
 
 import logging
@@ -213,7 +213,7 @@ def standalone_seg(
         opth = Path(outpath)
     else:
         opth = fmri.parent
-    nimpa.create_dir(opth)
+    create_dir(opth)
 
 
     fmri_fldr = fmri.parent
@@ -331,7 +331,7 @@ def standalone_normw(
     else:
         opth = Path(list4norm[0]).parent
 
-    nimpa.create_dir(opth)
+    create_dir(opth)
 
     fwnrm_out = []
     for f in list4norm:

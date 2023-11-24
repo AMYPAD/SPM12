@@ -13,7 +13,7 @@ import requests
 import zipfile
 import subprocess
 
-from niftypet import nimpa
+from miutil import create_dir
 
 import logging
 log = logging.getLogger(__name__)
@@ -185,10 +185,10 @@ def install_standalone():
     usrpth = get_user_folder()
     # > core destination path
     spmsa_fldr = usrpth/spmsa_fldr_name
-    nimpa.create_dir(spmsa_fldr)
+    create_dir(spmsa_fldr)
     # > downloads destination
     dpth = spmsa_fldr/'downloads'
-    nimpa.create_dir(dpth)
+    create_dir(dpth)
     #--------------------------------------------
 
     if os_sel==1:
