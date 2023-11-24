@@ -441,14 +441,18 @@ def seg_spm(
       sotre_fwd/inv: stores forward/inverse normalisation definitions
       visual: shows the Matlab window progress
     """
-    out = {}                          # output dictionary
-    eng = ensure_spm(matlab_eng_name) # get Matlab engine or use the provided one
-    if not spm_path:
-        spm_path = spm_dir()
 
+    # > output dictionary
+    out = {}                          
 
     if not standalone:
+
         # > run SPM normalisation/segmentation using standard MATLAB
+        # > get Matlab engine or use the provided one
+        eng = ensure_spm(matlab_eng_name) 
+        if not spm_path:
+            spm_path = spm_dir()
+
         param, invdef, fordef = eng.amypad_seg(
             f_mri,
             str(spm_path),
