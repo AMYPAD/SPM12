@@ -534,7 +534,7 @@ def normw_spm(
     """
 
     if isinstance(files4norm, (str, PurePath)):
-        files4norm = Path(files4norm)
+        files4norm = str(files4norm)
     elif isinstance (files4norm, list):
         files4norm = [str(f) for f in files4norm]
     else:
