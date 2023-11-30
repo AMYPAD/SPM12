@@ -523,14 +523,22 @@ def normw_spm(
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
-      f_def: NIfTI file of definitions for non-rigid normalisation
-      files4norm: list of input NIfTI file paths in format ['file, 1']
-      voxsz: voxel size of the output (normalised) images
-      intrp: interpolation level used for the normalised images
-             (4: B-spline, default)
+      f_def:    NIfTI file of definitions for non-rigid normalisation
+      files4norm: list or single Path/string of input NIfTI file 
+                path(s)
+      voxsz:    voxel size of the output (normalised) images
+      intrp:    interpolation level used for the normalised images
+                (4: B-spline, default)
       matlab_eng_name: name of the Python engine for Matlab.
-      outpath: output folder path for the normalisation files
+      outpath:  output folder path for the normalisation files
     """
+
+    if isinstance(files4norm, (str, PurePath)):
+        files4norm = Path(files4norm)
+    elif isinstance (files4norm, list):
+        files4norm = [str(f) for f in files4norm]
+    else:
+        raise ValueError('unknown input type for `files4norm` (only strings, Paths or list of Paths/strings is accepted)')
 
     if not standalone:
         import matlab as ml
