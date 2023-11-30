@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from numbers import Number
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from textwrap import dedent
 
 import numpy as np
