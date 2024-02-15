@@ -4,22 +4,21 @@ Standalone SPM12 functionalities running on MATLAB Runtime
 __author__ = "Pawel Markiewicz"
 __copyright__ = "Copyright 2023"
 
-
-
+import logging
 import os
-from pathlib import Path, PurePath
 import subprocess
+from pathlib import Path, PurePath
 
 from miutil import create_dir
+
 import spm12
 
-import logging
 log = logging.getLogger(__name__)
 
-
-
 fmri = Path('D:/data/reg_test/04000177_MRI_T1_N4_N4bias_com-modified.nii')
-fpet = Path('D:/data/reg_test/UR-aligned_4-summed-frames_DY_MRAC_20MIN__PETBrain_static_com-modified.nii')
+fpet = Path(
+    'D:/data/reg_test/UR-aligned_4-summed-frames_DY_MRAC_20MIN__PETBrain_static_com-modified.nii')
+
 
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def standalone_coreg(
@@ -30,18 +29,15 @@ def standalone_coreg(
     sep=[4, 2],
     tol=[0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001],
     fwhm=[7, 7],
-    ):
-
+):
     ''' Run SPM12 coregistration using SPM12 standalone on MATLAB Runtime
         Arguments:
         fref:   file path to the reference image (uncompressed NIfTI)
         fflo:   file path to the floating image (uncompressed NIfTI)
     '''
 
-
     spm12.ensure_standalone()
     fspm = spm12.standalone_path()
-
 
     # > reference and floating images
     fref = str(fref)
@@ -56,7 +52,7 @@ def standalone_coreg(
     # > change the parameters to strings for MATLAB scripting
     sep_str = ' '.join([str(s) for s in sep])
     tol_str = ' '.join([str(s) for s in tol])
-    fwhm_str= ' '.join([str(s) for s in fwhm])
+    fwhm_str = ' '.join([str(s) for s in fwhm])
 
     # > form full set of commands for SPM12 coregistration
     coreg_batch_txt = "spm('defaults', 'PET');\nspm_jobman('initcfg');\n\n"
@@ -69,7 +65,7 @@ def standalone_coreg(
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.fwhm = [{fwhm_str}];\n\n"
     coreg_batch_txt += "spm_jobman('run', matlabbatch);"
 
-    fcoreg = fspm.parent.parent/'spm_coreg_runtime.m'
+    fcoreg = fspm.parent.parent / 'spm_coreg_runtime.m'
 
     with open(fcoreg, 'w') as f:
         f.write(coreg_batch_txt)
@@ -81,32 +77,18 @@ def standalone_coreg(
     except subprocess.CalledProcessError as e:
         print(f"Coregistration error: {e}")
 
-
     return fcoreg
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
+
+#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 # > Segmentation
-def standalone_seg(
-    fmri,
-    outpath=None,
-    nat_gm=True,
-    nat_wm=True,
-    nat_csf=True,
-    nat_bn=False,
-    biasreg=0.001,
-    biasfwhm=60,
-    mrf_cleanup=1,
-    cleanup=1,
-    regulariser=[0, 0.001, 0.5, 0.05, 0.2],
-    affinereg='mni',
-    fwhm=0,
-    sampling=3,
-    store_fwd=True,
-    store_inv=True):
-
+def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, nat_bn=False,
+                   biasreg=0.001, biasfwhm=60, mrf_cleanup=1, cleanup=1,
+                   regulariser=[0, 0.001, 0.5, 0.05, 0.2], affinereg='mni', fwhm=0, sampling=3,
+                   store_fwd=True, store_inv=True):
     ''' Segment MRI NIfTI image using standalone SPM12 with normalisation.
         Arguments:
         fmri:   input T1w MRI image.
@@ -116,29 +98,29 @@ def standalone_seg(
                             fields definitions.
     '''
 
-
     if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
+        log.error(
+            'MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... '
+        )
         response = input('Do you want to install MATLAB Runtime? [y/n]')
         if response in ['y', 'Y', 'yes']:
             spm12.install_standalone()
     else:
         fspm = spm12.standalone_path()
 
-
     # > the path to the input T1w MRI image
-    fmri  = Path(fmri)
+    fmri = Path(fmri)
     f_mri = str(fmri)
 
     # > path to the TPM.nii internal file
-    tpm_pth = str(fspm.parent/'spm12_mcr'/'spm12'/'spm12'/'tpm'/'TPM.nii')
+    tpm_pth = str(fspm.parent / 'spm12_mcr' / 'spm12' / 'spm12' / 'tpm' / 'TPM.nii')
 
     # > regulariser string
-    rglrsr_str= ' '.join([str(s) for s in regulariser])
+    rglrsr_str = ' '.join([str(s) for s in regulariser])
 
     # > writing deformations (forward and inverse)
     wrt_dfrm = [int(store_fwd), int(store_inv)]
-    wrtdfrm_str= ' '.join([str(s) for s in wrt_dfrm])
+    wrtdfrm_str = ' '.join([str(s) for s in wrt_dfrm])
 
     nat1 = '[{} 0]'.format(int(nat_gm))
     nat2 = '[{} 0]'.format(int(nat_wm))
@@ -193,11 +175,10 @@ def standalone_seg(
 
     seg_batch_txt += "spm_jobman('run', matlabbatch);"
 
-    fseg = fspm.parent.parent/'spm_seg_runtime.m'
+    fseg = fspm.parent.parent / 'spm_seg_runtime.m'
 
     with open(fseg, 'w') as f:
         f.write(seg_batch_txt)
-
 
     # > attempt SPM12 segmentation
     try:
@@ -207,7 +188,6 @@ def standalone_seg(
     except subprocess.CalledProcessError as e:
         print(f"Segmentation error: {e}")
 
-
     # > output path
     if not outpath is None:
         opth = Path(outpath)
@@ -215,53 +195,47 @@ def standalone_seg(
         opth = fmri.parent
     create_dir(opth)
 
-
     fmri_fldr = fmri.parent
 
     outdct = {}
     for f in fmri_fldr.iterdir():
 
-        if f.name[:2]=='c1':
-            outdct['c1'] = opth/f.name
-        elif f.name[:2]=='c2':
-            outdct['c2'] = opth/f.name
-        elif f.name[:2]=='c3':
-            outdct['c3'] = opth/f.name
-        elif f.name[:2]=='c4':
-            outdct['c4'] = opth/f.name
-        elif f.name[-8:]=='seg8.mat':
-            outdct['param'] = opth/f.name
-        elif f.name[:2]=='y_':
-            outdct['fordef'] = opth/f.name
-        elif f.name[:3]=='iy_':
-            outdct['invdef'] = opth/f.name
+        if f.name[:2] == 'c1':
+            outdct['c1'] = opth / f.name
+        elif f.name[:2] == 'c2':
+            outdct['c2'] = opth / f.name
+        elif f.name[:2] == 'c3':
+            outdct['c3'] = opth / f.name
+        elif f.name[:2] == 'c4':
+            outdct['c4'] = opth / f.name
+        elif f.name[-8:] == 'seg8.mat':
+            outdct['param'] = opth / f.name
+        elif f.name[:2] == 'y_':
+            outdct['fordef'] = opth / f.name
+        elif f.name[:3] == 'iy_':
+            outdct['invdef'] = opth / f.name
         else:
             continue
-        
-        os.replace(f, opth/f.name)
+
+        os.replace(f, opth / f.name)
 
     outdct['fbatch'] = fseg
 
     return outdct
+
+
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
-
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-def standalone_normw(
-    fdef,
-    list4norm,
-    bbox=None,
-    voxsz=[2,2,2],
-    intrp=4,
-    prfx='w',
-    outpath=None):
-
+def standalone_normw(fdef, list4norm, bbox=None, voxsz=[2, 2, 2], intrp=4, prfx='w', outpath=None):
     ''' Write out normalised NIfTI images using definitions `fdef`.
     '''
 
     if not spm12.check_standalone():
-        log.error('MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... ')
+        log.error(
+            'MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... '
+        )
         response = input('Do you want to install MATLAB Runtime? [y/n]')
         if response in ['y', 'Y', 'yes']:
             spm12.install_standalone()
@@ -279,7 +253,6 @@ def standalone_normw(
 
     # > form list of flies to be normalised
     lst2nrm = '\n'.join([f"'{s},1'" for s in list4norm])
-
 
     if isinstance(voxsz, (int, float)):
         voxsz = [voxsz, voxsz, voxsz]
@@ -311,11 +284,10 @@ def standalone_normw(
 
     wnrm_batch_txt += "spm_jobman('run', matlabbatch);"
 
-    fwnrm = fspm.parent.parent/'spm_writenorm_runtime.m'
+    fwnrm = fspm.parent.parent / 'spm_writenorm_runtime.m'
 
     with open(fwnrm, 'w') as f:
         f.write(wnrm_batch_txt)
-
 
     # > attempt spm12 segmentation
     try:
@@ -336,9 +308,11 @@ def standalone_normw(
     fwnrm_out = []
     for f in list4norm:
         f = Path(f)
-        fout = opth/(prfx+f.name)
-        os.replace(f.parent/(prfx+f.name), fout)
+        fout = opth / (prfx + f.name)
+        os.replace(f.parent / (prfx + f.name), fout)
         fwnrm_out.append(fout)
 
     return fwnrm_out
+
+
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

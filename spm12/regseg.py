@@ -14,10 +14,9 @@ import scipy.ndimage as ndi
 from miutil import create_dir, hasext
 from miutil.imio import nii
 
-from .utils import ensure_spm, spm_dir
-from .standalone import standalone_coreg, standalone_seg, standalone_normw
 from .setup_rt import ensure_standalone
-
+from .standalone import standalone_coreg, standalone_normw, standalone_seg
+from .utils import ensure_spm, spm_dir
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +99,7 @@ def mat2array(matlab_mat):
         return np.array(matlab_mat._data).reshape(matlab_mat.size, order='F')
     return np.array(matlab_mat)
 
+
 #====================================================================
 def coreg_spm(
     imref,
@@ -134,7 +134,7 @@ def coreg_spm(
       modify_nii: modifies the affine of the NIfTI file of the floating
         image according to the rigid body transformation.
       standalone: if True, uses the standalone SPM12 with MATLAB Runtime;
-                  if it is not installed it will attempt installing the 
+                  if it is not installed it will attempt installing the
                   MATLAB Runtime and SPM12 standalone.
     """
     out = {}  # output dictionary
@@ -247,7 +247,6 @@ def coreg_spm(
             if not fname_aff.endswith(".npy"):
                 fname_aff += ".npy"
             faff = os.path.join(opth, "affine-spm", fname_aff)
-        
 
         # > save the affine transformation
         if save_arr:
@@ -271,17 +270,10 @@ def coreg_spm(
         else:
             foth = None
 
-        out['fbatch'] = standalone_coreg(
-            imrefu,
-            imflou,
-            foth,
-            cost_fun=costfun,
-            sep=sep,
-            tol=tol,
-            fwhm=fwhm)
+        out['fbatch'] = standalone_coreg(imrefu, imflou, foth, cost_fun=costfun, sep=sep, tol=tol,
+                                         fwhm=fwhm)
 
         out['freg'] = imflou_
-    
 
     # > delete the uncompressed files
     if del_uncmpr:
@@ -289,30 +281,16 @@ def coreg_spm(
         os.remove(imflou)
 
     return out
+
+
 #====================================================================
 
 
 #====================================================================
-def resample_spm(
-    imref,
-    imflo,
-    M,
-    matlab_eng_name="",
-    fwhm=0,
-    intrp=1,
-    which=1,
-    mask=0,
-    mean=0,
-    outpath="",
-    fimout="",
-    fcomment="",
-    prefix="r_",
-    pickname="ref",
-    del_ref_uncmpr=False,
-    del_flo_uncmpr=False,
-    del_out_uncmpr=False,
-    standalone=False
-):
+def resample_spm(imref, imflo, M, matlab_eng_name="", fwhm=0, intrp=1, which=1, mask=0, mean=0,
+                 outpath="", fimout="", fcomment="", prefix="r_", pickname="ref",
+                 del_ref_uncmpr=False, del_flo_uncmpr=False, del_out_uncmpr=False,
+                 standalone=False):
     log.debug(
         dedent("""\
         ======================================================================
@@ -443,13 +421,13 @@ def seg_spm(
     """
 
     # > output dictionary
-    out = {}                          
+    out = {}
 
     if not standalone:
 
         # > run SPM normalisation/segmentation using standard MATLAB
         # > get Matlab engine or use the provided one
-        eng = ensure_spm(matlab_eng_name) 
+        eng = ensure_spm(matlab_eng_name)
         if not spm_path:
             spm_path = spm_dir()
 
@@ -486,45 +464,26 @@ def seg_spm(
 
     else:
         # > run standalone SPM12 using MATLAB Runtime (no license needed)
-        out = standalone_seg(
-            f_mri,
-            outpath=outpath,
-            nat_gm=store_nat_gm,
-            nat_wm=store_nat_wm,
-            nat_csf=store_nat_csf,
-            nat_bn=store_nat_bon,
-            biasreg=0.001,
-            biasfwhm=60,
-            mrf_cleanup=1,
-            cleanup=1,
-            regulariser=[0, 0.001, 0.5, 0.05, 0.2],
-            affinereg='mni',
-            fwhm=0,
-            sampling=3,
-            store_fwd=store_fwd,
-            store_inv=store_inv)
+        out = standalone_seg(f_mri, outpath=outpath, nat_gm=store_nat_gm, nat_wm=store_nat_wm,
+                             nat_csf=store_nat_csf, nat_bn=store_nat_bon, biasreg=0.001,
+                             biasfwhm=60, mrf_cleanup=1, cleanup=1,
+                             regulariser=[0, 0.001, 0.5, 0.05, 0.2], affinereg='mni', fwhm=0,
+                             sampling=3, store_fwd=store_fwd, store_inv=store_inv)
 
-    
     return out
-#====================================================================
 
 
 #====================================================================
-def normw_spm(
-    f_def,
-    files4norm,
-    outpath=None,
-    voxsz=2,
-    intrp=4,
-    bbox=None,
-    matlab_eng_name="",
-    standalone=False):
 
+
+#====================================================================
+def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matlab_eng_name="",
+              standalone=False):
     """
     Write normalisation output to NIfTI files using SPM12.
     Args:
       f_def:    NIfTI file of definitions for non-rigid normalisation
-      files4norm: list or single Path/string of input NIfTI file 
+      files4norm: list or single Path/string of input NIfTI file
                 path(s)
       voxsz:    voxel size of the output (normalised) images
       intrp:    interpolation level used for the normalised images
@@ -535,15 +494,17 @@ def normw_spm(
 
     if isinstance(files4norm, (str, PurePath)):
         files4norm = [str(files4norm)]
-    elif isinstance (files4norm, list):
+    elif isinstance(files4norm, list):
         files4norm = [str(f) for f in files4norm]
     else:
-        raise ValueError('unknown input type for `files4norm` (only strings, Paths or list of Paths/strings is accepted)')
+        raise ValueError(
+            'unknown input type for `files4norm` (only strings, Paths or list of Paths/strings is accepted)'
+        )
 
     if not standalone:
         import matlab as ml
 
-        list4norm = [f+',1' for f in files4norm]  
+        list4norm = [f + ',1' for f in files4norm]
 
         if bbox is None:
             bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
@@ -570,7 +531,7 @@ def normw_spm(
         if outpath is not None:
             create_dir(outpath)
             for f in files4norm:
-                fpth = f #.split(",")[0]
+                fpth = f                                                                   #.split(",")[0]
                 out.append(
                     move_files(
                         os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
@@ -582,14 +543,10 @@ def normw_spm(
     # > Standalone SPM12
     else:
 
-        out = standalone_normw(
-            f_def,
-            files4norm,
-            bbox=bbox,
-            voxsz=voxsz,
-            intrp=intrp,
-            prfx='w',
-            outpath=outpath)
+        out = standalone_normw(f_def, files4norm, bbox=bbox, voxsz=voxsz, intrp=intrp, prfx='w',
+                               outpath=outpath)
 
     return out
+
+
 #====================================================================
