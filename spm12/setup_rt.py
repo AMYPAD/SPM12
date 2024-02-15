@@ -131,7 +131,7 @@ def check_standalone():
 
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def ensure_standalone():
-    ''' Check if the standalone SPM12 is already installed
+    ''' Ensure the standalone SPM12 is installed
         with the correct MATLAB Runtime
     '''
 
@@ -146,6 +146,8 @@ def ensure_standalone():
 #-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def get_file(url, save_path):
     response = requests.get(url)
+
+    print('Downloading setup file - this make take a while (it is Matlab) ...')
     
     # Check if the request was successful (status code 200)
     if response.status_code == 200:
