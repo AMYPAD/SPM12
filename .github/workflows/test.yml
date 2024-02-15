@@ -8,13 +8,13 @@ jobs:
     if: github.event_name != 'pull_request' || !contains('OWNER,MEMBER,COLLABORATOR', github.event.pull_request.author_association)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
     - name: set PYSHA
       run: echo "PYSHA=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.cache/pre-commit
         key: pre-commit|${{ env.PYSHA }}|${{ hashFiles('.pre-commit-config.yaml') }}
@@ -43,15 +43,15 @@ jobs:
       matrix:
         python: [3.7, 3.11]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
     - run: pip install -U .[dev]
     - run: pytest --durations-min=1
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4
   matlab:
     if: github.event_name != 'pull_request' || !contains('OWNER,MEMBER,COLLABORATOR', github.event.pull_request.author_association)
     name: MATLAB py${{ matrix.python }}
@@ -60,40 +60,42 @@ jobs:
       matrix:
         python: [3.7, 3.8]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Run setup-python
       run: setup-python -p${{ matrix.python }}
     - run: pip install -U .[dev] 'setuptools<66'  # ignore matlab engine PEP440 non-compliance https://github.com/pypa/setuptools/issues/3772
     - run: pytest --durations-min=1
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4
     - name: Post Run setup-python
       run: setup-python -p${{ matrix.python }} -Dr
       if: ${{ always() }}
   deploy:
     needs: [check, test, matlab]
     name: PyPI Deploy
+    environment: pypi
+    permissions:
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
     - id: dist
       uses: casperdcl/deploy-pypi@v2
       with:
-        pip: true
-        gpg_key: ${{ secrets.GPG_KEY }}
-        password: ${{ secrets.PYPI_TOKEN }}
+        build: true
         upload: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags') }}
     - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
       name: Release
       run: |
         changelog=$(git log --pretty='format:%d%n- %s%n%b---' $(git tag --sort=v:refname | tail -n2 | head -n1)..HEAD)
         tag="${GITHUB_REF#refs/tags/}"
-        gh release create --title "spm12 $tag beta" --draft --notes "$changelog" "$tag" dist/${{ steps.dist.outputs.whl }} dist/${{ steps.dist.outputs.whl_asc }}
+        gh release create --title "spm12 $tag beta" --draft --notes "$changelog" "$tag" dist/${{ steps.dist.outputs.whl }}
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN || github.token }}
