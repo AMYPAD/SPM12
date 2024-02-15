@@ -9,6 +9,7 @@ import os
 import subprocess
 from pathlib import Path, PurePath
 
+import numpy as np
 from miutil import create_dir
 
 import spm12
@@ -20,21 +21,22 @@ fpet = Path(
     'D:/data/reg_test/UR-aligned_4-summed-frames_DY_MRAC_20MIN__PETBrain_static_com-modified.nii')
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-def standalone_coreg(
-    fref,
-    fflo,
-    foth=None,
-    cost_fun='nmi',
-    sep=[4, 2],
-    tol=[0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001],
-    fwhm=[7, 7],
-):
-    ''' Run SPM12 coregistration using SPM12 standalone on MATLAB Runtime
-        Arguments:
-        fref:   file path to the reference image (uncompressed NIfTI)
-        fflo:   file path to the floating image (uncompressed NIfTI)
-    '''
+def standalone_coreg(fref, fflo, foth=None, cost_fun='nmi', sep=None, tol=None, fwhm=None):
+    """
+    Run SPM12 coregistration using SPM12 standalone on MATLAB Runtime
+    Arguments:
+    fref:  file path to the reference image (uncompressed NIfTI)
+    fflo:  file path to the floating image (uncompressed NIfTI)
+    sep:   default [4, 2]
+    tol:   default [0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001]
+    fwhm:  default [7, 7]
+    """
+    if sep is None:
+        sep = [4, 2]
+    if tol is None:
+        tol = [0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001]
+    if fwhm is None:
+        fwhm = [7, 7]
 
     spm12.ensure_standalone()
     fspm = spm12.standalone_path()
@@ -59,10 +61,12 @@ def standalone_coreg(
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.ref = {{'{fref},1'}};\n"
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.source = {{'{fflo},1'}};\n"
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.other = {{'{foth},1'}};\n"
-    coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.cost_fun = '{cost_fun}';\n"
+    coreg_batch_txt += (
+        f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.cost_fun = '{cost_fun}';\n")
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.sep = [{sep_str}];\n"
     coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.tol = [{tol_str}];\n"
-    coreg_batch_txt += f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.fwhm = [{fwhm_str}];\n\n"
+    coreg_batch_txt += (
+        f"matlabbatch{{1}}.spm.spatial.coreg.estimate.eoptions.fwhm = [{fwhm_str}];\n\n")
     coreg_batch_txt += "spm_jobman('run', matlabbatch);"
 
     fcoreg = fspm.parent.parent / 'spm_coreg_runtime.m'
@@ -80,28 +84,26 @@ def standalone_coreg(
     return fcoreg
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 # > Segmentation
+
+
 def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, nat_bn=False,
-                   biasreg=0.001, biasfwhm=60, mrf_cleanup=1, cleanup=1,
-                   regulariser=[0, 0.001, 0.5, 0.05, 0.2], affinereg='mni', fwhm=0, sampling=3,
-                   store_fwd=True, store_inv=True):
+                   biasreg=0.001, biasfwhm=60, mrf_cleanup=1, cleanup=1, regulariser=None,
+                   affinereg='mni', fwhm=0, sampling=3, store_fwd=True, store_inv=True):
     ''' Segment MRI NIfTI image using standalone SPM12 with normalisation.
         Arguments:
         fmri:   input T1w MRI image.
         nat_{gm,wm,csf,bn}: output native space grey matter, white matter
                             CSF or bone segmentations.
+        regulariser: default [0, 0.001, 0.5, 0.05, 0.2]
         store_{fwd,inv}:    store forward and/or inverse deformation
                             fields definitions.
     '''
-
+    if regulariser is None:
+        regulariser = [0, 0.001, 0.5, 0.05, 0.2]
     if not spm12.check_standalone():
-        log.error(
-            'MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... '
-        )
+        log.error("MATLAB Runtime or standalone SPM12 has not been correctly installed.")
+        log.error("Attempting installation...")
         response = input('Do you want to install MATLAB Runtime? [y/n]')
         if response in ['y', 'Y', 'yes']:
             spm12.install_standalone()
@@ -122,46 +124,46 @@ def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, n
     wrt_dfrm = [int(store_fwd), int(store_inv)]
     wrtdfrm_str = ' '.join([str(s) for s in wrt_dfrm])
 
-    nat1 = '[{} 0]'.format(int(nat_gm))
-    nat2 = '[{} 0]'.format(int(nat_wm))
-    nat3 = '[{} 0]'.format(int(nat_csf))
-    nat4 = '[{} 0]'.format(int(nat_bn))
+    nat1 = f'[{nat_gm:d} 0]'
+    nat2 = f'[{nat_wm:d} 0]'
+    nat3 = f'[{nat_csf:d} 0]'
+    nat4 = f'[{nat_bn:d} 0]'
 
     seg_batch_txt = "spm('defaults', 'PET');\nspm_jobman('initcfg');\n\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.channel.vols = {{'{f_mri},1'}};\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.channel.biasreg = {biasreg};\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.channel.biasfwhm = {biasfwhm};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.channel.write = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.channel.write = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(1).tpm = {{'{tpm_pth},1'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(1).ngaus = 1;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(1).ngaus = 1;\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(1).native = {nat1};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(1).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(1).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(2).tpm = {{'{tpm_pth},2'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(2).ngaus = 1;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(2).ngaus = 1;\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(2).native = {nat2};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(2).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(2).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(3).tpm = {{'{tpm_pth},3'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(3).ngaus = 2;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(3).ngaus = 2;\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(3).native = {nat3};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(3).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(3).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(4).tpm = {{'{tpm_pth},4'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(4).ngaus = 3;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(4).ngaus = 3;\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(4).native = {nat4};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(4).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(4).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(5).tpm = {{'{tpm_pth},5'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(5).ngaus = 4;\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(5).native = [0 0];\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(5).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(5).ngaus = 4;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(5).native = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(5).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(6).tpm = {{'{tpm_pth},6'}};\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(6).ngaus = 2;\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(6).native = [0 0];\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.tissue(6).warped = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(6).ngaus = 2;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(6).native = [0 0];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.tissue(6).warped = [0 0];\n"
 
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.mrf = {mrf_cleanup};\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.cleanup = {cleanup};\n"
@@ -170,8 +172,8 @@ def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, n
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.fwhm = {fwhm};\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.samp = {sampling};\n"
     seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.write = [{wrtdfrm_str}];\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.vox = NaN;\n"
-    seg_batch_txt += f"matlabbatch{{1}}.spm.spatial.preproc.warp.bb = [NaN NaN NaN;NaN NaN NaN];\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.warp.vox = NaN;\n"
+    seg_batch_txt += "matlabbatch{1}.spm.spatial.preproc.warp.bb = [NaN NaN NaN;NaN NaN NaN];\n"
 
     seg_batch_txt += "spm_jobman('run', matlabbatch);"
 
@@ -188,18 +190,13 @@ def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, n
     except subprocess.CalledProcessError as e:
         print(f"Segmentation error: {e}")
 
-    # > output path
-    if not outpath is None:
-        opth = Path(outpath)
-    else:
-        opth = fmri.parent
+    opth = Path(outpath) if outpath is not None else fmri.parent
     create_dir(opth)
 
     fmri_fldr = fmri.parent
 
     outdct = {}
     for f in fmri_fldr.iterdir():
-
         if f.name[:2] == 'c1':
             outdct['c1'] = opth / f.name
         elif f.name[:2] == 'c2':
@@ -224,18 +221,17 @@ def standalone_seg(fmri, outpath=None, nat_gm=True, nat_wm=True, nat_csf=True, n
     return outdct
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-def standalone_normw(fdef, list4norm, bbox=None, voxsz=[2, 2, 2], intrp=4, prfx='w', outpath=None):
-    ''' Write out normalised NIfTI images using definitions `fdef`.
-    '''
-
+def standalone_normw(fdef, list4norm, bbox=None, voxsz=None, intrp=4, prfx='w', outpath=None):
+    """
+    Write out normalised NIfTI images using definitions `fdef`.
+    Arguments:
+    voxsz: default [2, 2, 2].
+    """
+    if voxsz is None:
+        voxsz = [2, 2, 2]
     if not spm12.check_standalone():
-        log.error(
-            'MATLAB Runtime or standalone SPM12 has not been correctly installed.\nAttempting installation... '
-        )
+        log.error("MATLAB Runtime or standalone SPM12 has not been correctly installed.")
+        log.error("Attempting installation...")
         response = input('Do you want to install MATLAB Runtime? [y/n]')
         if response in ['y', 'Y', 'yes']:
             spm12.install_standalone()
@@ -276,7 +272,8 @@ def standalone_normw(fdef, list4norm, bbox=None, voxsz=[2, 2, 2], intrp=4, prfx=
 
     wnrm_batch_txt = "spm('defaults', 'PET');\nspm_jobman('initcfg');\n\n"
     wnrm_batch_txt += f"matlabbatch{{1}}.spm.spatial.normalise.write.subj.def = {{'{fdef}'}};\n"
-    wnrm_batch_txt += f"matlabbatch{{1}}.spm.spatial.normalise.write.subj.resample = {{{lst2nrm}}};\n"
+    wnrm_batch_txt += (
+        f"matlabbatch{{1}}.spm.spatial.normalise.write.subj.resample = {{{lst2nrm}}};\n")
     wnrm_batch_txt += f"matlabbatch{{1}}.spm.spatial.normalise.write.woptions.bb = [{bbxstr}];\n"
     wnrm_batch_txt += f"matlabbatch{{1}}.spm.spatial.normalise.write.woptions.vox = [{voxstr}];\n"
     wnrm_batch_txt += f"matlabbatch{{1}}.spm.spatial.normalise.write.woptions.interp = {intrp};\n"
@@ -297,12 +294,7 @@ def standalone_normw(fdef, list4norm, bbox=None, voxsz=[2, 2, 2], intrp=4, prfx=
     except subprocess.CalledProcessError as e:
         print(f"write normalisation error: {e}")
 
-    # > output path
-    if not outpath is None:
-        opth = Path(outpath)
-    else:
-        opth = Path(list4norm[0]).parent
-
+    opth = Path(outpath) if outpath is not None else Path(list4norm[0]).parent
     create_dir(opth)
 
     fwnrm_out = []
@@ -313,6 +305,3 @@ def standalone_normw(fdef, list4norm, bbox=None, voxsz=[2, 2, 2], intrp=4, prfx=
         fwnrm_out.append(fout)
 
     return fwnrm_out
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

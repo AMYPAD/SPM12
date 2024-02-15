@@ -9,18 +9,20 @@ import os
 import platform
 import subprocess
 import zipfile
-from pathlib import Path, PurePath
+from pathlib import Path
+from textwrap import dedent
 
 import requests
 from miutil import create_dir
 
 log = logging.getLogger(__name__)
 
-#----------------------------------------------------------
 # > MATLAB standalone:
 mat_core = 'https://ssd.mathworks.com/supportfiles/downloads/'
-mwin = mat_core + 'R2019b/Release/9/deployment_files/installer/complete/win64/MATLAB_Runtime_R2019b_Update_9_win64.zip'
-mlnx = mat_core + 'R2022b/Release/7/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2022b_Update_7_glnxa64.zip'
+mwin = mat_core + ('R2019b/Release/9/deployment_files/installer/complete/'
+                   'win64/MATLAB_Runtime_R2019b_Update_9_win64.zip')
+mlnx = mat_core + ('R2022b/Release/7/deployment_files/installer/complete/'
+                   'glnxa64/MATLAB_Runtime_R2022b_Update_7_glnxa64.zip')
 
 # > SPM12 stand-alone core address:
 spm_core = 'https://www.fil.ion.ucl.ac.uk/spm/download/restricted/utopia/spm12/'
@@ -30,45 +32,21 @@ smac = spm_core + 'spm12_r7771_macOS_R2022b.zip'
 
 spmsa_fldr_name = '.spmruntime'
 
-#----------------------------------------------------------
 
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def check_platform():
-
-    if not platform.system() in [
-            'Windows',]:          #'Darwin', 'Linux'
+    if platform.system() not in ['Windows']: # 'Darwin', 'Linux'
         log.error(
-            dedent(f'''\
-                currently the operating system is not supported: {platform.system()}
-                only Windows is supported (for now, Linux and macOS coming soon).'''))
+            dedent(f"""\
+            currently the operating system is not supported: {platform.system()}
+            only Windows is supported (for now, Linux and macOS coming soon)."""))
         raise SystemError('unknown operating system (OS).')
-
-    if platform.system() == 'Windows':
-        osid = 1
-    elif platform.system() == 'Linux':
-        osid = 0
-    elif platform.system() == 'Darwin':
-        osid = 2
-    else:
-        osid = None
-
-    return osid
+    return {'Linux': 0, 'Windows': 1, 'Darwin': 2}.get(platform.system(), None)
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def get_user_folder():
-    user_folder = os.path.expanduser("~")
-    return Path(user_folder)
+    return Path(os.path.expanduser("~"))
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def check_matlab_rt():
     ''' check if MATLA Runtime exists and what is its position in the
         PATH variable relative to standard MATLAB installation (if
@@ -85,65 +63,33 @@ def check_matlab_rt():
     for ip, p in enumerate(ospath):
         if 'MATLAB' in p and 'runtime' in p.lower() and 'v97' in p:
             matrt_pos = ip
-        if 'MATLAB' in p and not 'runtime' in p.lower():
+        if 'MATLAB' in p and 'runtime' not in p.lower():
             mat_pos = ip
 
     if not (mat_pos is None or matrt_pos is None) and mat_pos < matrt_pos:
         raise ValueError(
-            'MATLAB Runtime Path needs to be above standard MATLAB installation Path.\nChange the environment variable Path accordingly.'
-        )
-
-    if matrt_pos is not None:
-        return True
-    else:
-        return False
+            "MATLAB Runtime Path needs to be above standard MATLAB installation Path.\n"
+            "Change the environment variable Path accordingly.")
+    return matrt_pos is not None
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def standalone_path():
-    ''' get the path to standalone SPM
-    '''
-
+    """get the path to standalone SPM"""
     # > user main folder
     usrpth = get_user_folder()
-
     # > core SPM 12 standalone/runtime path
     spmsa_fldr = usrpth / spmsa_fldr_name
-
-    fspm = spmsa_fldr / 'spm12' / 'spm12.exe'
-
-    return fspm
+    return spmsa_fldr / 'spm12' / 'spm12.exe'
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def check_standalone():
-    ''' Check if the standalone SPM12 is already installed
-        with the correct MATLAB Runtime
-    '''
-
+    """Check if the standalone SPM12 is already installed with the correct MATLAB Runtime"""
     fspm = standalone_path()
-
-    if fspm.is_file() and check_matlab_rt():
-        return True
-    else:
-        return False
+    return fspm.is_file() and check_matlab_rt()
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def ensure_standalone():
-    ''' Ensure the standalone SPM12 is installed
-        with the correct MATLAB Runtime
-    '''
-
+    """Ensure the standalone SPM12 is installed with the correct MATLAB Runtime"""
     if not check_standalone():
         log.warning('MATLAB Runtime for SPM12 is not yet installed on your machine')
         response = input('Do you want to install MATLAB Runtime? [y/n]')
@@ -151,10 +97,6 @@ def ensure_standalone():
             install_standalone()
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def get_file(url, save_path):
     response = requests.get(url)
 
@@ -169,34 +111,24 @@ def get_file(url, save_path):
         print(f'Failed to download file. Status code: {response.status_code}')
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 def unzip_file(zip_path, extract_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_path)
 
 
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 # INSTALL MATLAB RUNTIME and STANDALONE SPM12
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-def install_standalone():
-    ''' Install Matlab Runtime and the associated SPM12
-    '''
 
+
+def install_standalone():
+    """Install Matlab Runtime and the associated SPM12"""
     # > select the OS (0: Linux, 1: Windows, 2: MacOS)
     os_sel = check_platform()
-    log.info('you are currently using OS platform: {}'.format(platform.system()))
+    log.info('you are currently using OS platform: %s', platform.system())
 
     if os_sel != 1:
         log.error('the operating system is yet supported')
         raise SystemError('OS not supported')
 
-    #--------------------------------------------
     # > user main folder
     usrpth = get_user_folder()
     # > core destination path
@@ -205,10 +137,8 @@ def install_standalone():
     # > downloads destination
     dpth = spmsa_fldr / 'downloads'
     create_dir(dpth)
-    #--------------------------------------------
 
     if os_sel == 1:
-        #--------------------------------------------
         if not check_matlab_rt():
             # MATLAB Runtime Installation
             fmwin = dpth / os.path.basename(mwin)
@@ -225,8 +155,8 @@ def install_standalone():
                     'Matlab runtime setup executable does not exists or it is confusing')
 
             try:
-                print('AmyPET:>> Running Matlab Runtime Installation - \
-                    please approve by pressing yes for administrative privileges')
+                print("AmyPET:>> Running Matlab Runtime Installation - "
+                      "please approve by pressing yes for administrative privileges")
                 subprocess.run(['powershell', 'Start-Process', matrun_sexe[0], '-Verb', 'Runas'],
                                check=True)
                 print("Setup started successfully.")
@@ -239,9 +169,6 @@ def install_standalone():
         else:
             log.info('MATLAB Runtime already installed')
 
-        #--------------------------------------------
-
-        #--------------------------------------------
         # SPM12
         # > check if SPM12 is already installed
         if not check_standalone():
@@ -257,7 +184,3 @@ def install_standalone():
 
         if not fspm.is_file():
             raise FileExistsError('The SPM12 executable has not been installed or is missing')
-        #--------------------------------------------
-
-
-#-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+

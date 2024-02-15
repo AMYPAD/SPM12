@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 from numbers import Number
-from pathlib import Path, PurePath
+from pathlib import PurePath
 from textwrap import dedent
 
 import numpy as np
@@ -100,7 +100,6 @@ def mat2array(matlab_mat):
     return np.array(matlab_mat)
 
 
-#====================================================================
 def coreg_spm(
     imref,
     imflo,
@@ -225,7 +224,6 @@ def coreg_spm(
         # get the translation and rotation parameters in a vector
         x = mat2array(xm)
 
-        #----------------------------------------
         # > save affine
         create_dir(os.path.join(opth, "affine-spm"))
 
@@ -254,7 +252,6 @@ def coreg_spm(
         if save_txt:
             faff = os.path.splitext(faff)[0] + ".txt"
             np.savetxt(faff, M)
-        #----------------------------------------
 
         out["affine"] = M
         out["faff"] = faff
@@ -283,10 +280,6 @@ def coreg_spm(
     return out
 
 
-#====================================================================
-
-
-#====================================================================
 def resample_spm(imref, imflo, M, matlab_eng_name="", fwhm=0, intrp=1, which=1, mask=0, mean=0,
                  outpath="", fimout="", fcomment="", prefix="r_", pickname="ref",
                  del_ref_uncmpr=False, del_flo_uncmpr=False, del_out_uncmpr=False,
@@ -340,7 +333,6 @@ def resample_spm(imref, imflo, M, matlab_eng_name="", fwhm=0, intrp=1, which=1, 
     else:
         raise ValueError("unrecognised affine matrix format")
 
-    #--------------------------------------------
     # run the Matlab SPM resampling
     import matlab as ml
 
@@ -354,7 +346,6 @@ def resample_spm(imref, imflo, M, matlab_eng_name="", fwhm=0, intrp=1, which=1, 
         which,
         prefix,
     )
-    #--------------------------------------------
 
     # -compress the output
     split = os.path.split(imflou)
@@ -392,7 +383,6 @@ def resample_spm(imref, imflo, M, matlab_eng_name="", fwhm=0, intrp=1, which=1, 
     return fout
 
 
-#====================================================================
 def seg_spm(
     f_mri,
     spm_path=None,
@@ -473,10 +463,6 @@ def seg_spm(
     return out
 
 
-#====================================================================
-
-
-#====================================================================
 def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matlab_eng_name="",
               standalone=False):
     """
@@ -497,9 +483,8 @@ def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matl
     elif isinstance(files4norm, list):
         files4norm = [str(f) for f in files4norm]
     else:
-        raise ValueError(
-            'unknown input type for `files4norm` (only strings, Paths or list of Paths/strings is accepted)'
-        )
+        raise ValueError("unknown input type for `files4norm`"
+                         " (only strings, Paths or list of Paths/strings is accepted)")
 
     if not standalone:
         import matlab as ml
@@ -531,7 +516,8 @@ def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matl
         if outpath is not None:
             create_dir(outpath)
             for f in files4norm:
-                fpth = f                                                                   #.split(",")[0]
+                fpth = f
+                # fpth = f.split(",")[0]
                 out.append(
                     move_files(
                         os.path.join(os.path.dirname(fpth), "w" + os.path.basename(fpth)),
@@ -542,11 +528,7 @@ def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matl
 
     # > Standalone SPM12
     else:
-
         out = standalone_normw(f_def, files4norm, bbox=bbox, voxsz=voxsz, intrp=intrp, prfx='w',
                                outpath=outpath)
 
     return out
-
-
-#====================================================================

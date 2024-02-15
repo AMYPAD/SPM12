@@ -1,6 +1,6 @@
 from .regseg import *  # NOQA, yapf: disable
-from .setup_rt import *
-from .standalone import *
+from .setup_rt import *  # NOQA, yapf: disable
+from .standalone import *  # NOQA, yapf: disable
 from .utils import *  # NOQA, yapf: disable
 
 # version detector. Precedence: installed dist, git, 'UNKNOWN'
