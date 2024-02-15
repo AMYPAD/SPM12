@@ -1,5 +1,6 @@
 name: Test
 on:
+  workflow_dispatch:
   push:
   pull_request:
   schedule: [{cron: '10 23 * * 6'}]  # M H d m w (Sat at 23:10)
