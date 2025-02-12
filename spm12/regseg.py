@@ -492,7 +492,7 @@ def normw_spm(f_def, files4norm, outpath=None, voxsz=2, intrp=4, bbox=None, matl
         list4norm = [f + ',1' for f in files4norm]
 
         if bbox is None:
-            bb = ml.double([[np.NaN, np.NaN, np.NaN], [np.NaN, np.NaN, np.NaN]])
+            bb = ml.double([[np.nan, np.nan, np.nan], [np.nan, np.nan, np.nan]])
         elif isinstance(bbox, np.ndarray) and bbox.shape == (2, 3):
             bb = ml.double(bbox.tolist())
         elif isinstance(bbox, list) and len(bbox) == 2:
